@@ -1,12 +1,12 @@
 # Info-Project
-''This is Alexander's README file''
+''This is README file''
 
-Team info
+Team info:
 
-  Levitskiy Ilya - Team Leader
+ 1. Levitskiy Ilya - Team Leader
 
-  Nikulina Irina
+ 2. Nikulina Irina
 
-  Kataeva Maria
+ 3. Kataeva Maria
 
-  Alexander Surchenko
+ 4. Alexander Surchenko
