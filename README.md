@@ -1,7 +1,6 @@
 # Info-Project
-<<<<<<< HEAD
-
 Team info
+==========
 
 Levitskiy Ilya - Team Leader
 
