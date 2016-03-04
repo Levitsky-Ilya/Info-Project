@@ -26,7 +26,7 @@ struct AmplFrecArray
     int ntime;
 };
 
-AmplFrecArray DpfTransform (const std::vector<int> &Ampl, int diffTime, int sizeWindow);
+AmplFrecArray DpfTransform (const std::vector<int> &ampl, int diffTime, int sizeWindow);
 
 
 #endif // WAV_SOUND_H
