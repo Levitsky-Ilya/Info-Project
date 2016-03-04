@@ -9,9 +9,9 @@ Nikulina Irina
 Is working on the part [3.](https://github.com/Levitsky-Ilya/Info-Project/wiki) of the project
 
 Kataeva Maria   
-Is working on the part [4.](https://github.com/Levitsky-Ilya/Info-Project/wiki) of the project
+Is working on the part [3.](https://github.com/Levitsky-Ilya/Info-Project/wiki) of the project
 
 Alexander Surchenko   
-Is working on the part [1.](https://github.com/Levitsky-Ilya/Info-Project/wiki) of the project
+Is working on the part [1. & 4.](https://github.com/Levitsky-Ilya/Info-Project/wiki) of the project
 
 
