@@ -1,8 +1,6 @@
-#include <SFML/Graphics.hpp>
+#include "SFML/Graphics.hpp"
 #include <iostream>
 #include "background.h"
-
-using namespace sf;
 
 int main()
 {
