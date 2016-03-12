@@ -4,48 +4,24 @@
 #include<iostream>
 #include<vector>
 
+using namespace std;
+
 class WavFile
 {
 public:
-    WavFile ();
+    WavFile (const char* fileName);
     ~WavFile ();
-    int open (const char* fileName);
-    int initialize ();
-    int getAmplArray ();
-    int DpfTransform (int sizeFrame, int nTime, double initFrec); //Arguments will be modify
-    int close ();
+    int getRate();
+    int getChannels();
+    int getAmplitudeArray (vector<double> &amplTime);
+#if 0
+    int getAmplFromStereo ();
+#endif
 
-    AmplFrecArray DpfResult;
-private:
-    std::vector<int> ampl;
-    double diffTime;
-};
-
-struct AmplFrecArray
-{
-    std::vector<int> ampl;
-    double diffFrec;
-    double diffTime;
-    double initFrec;
-    int ntime;
-};
-
-struct Note
-{
-    double frec;
-    double duration;
-    double initTime;
-};
-
-class Notes
-{
-public:
-    int generateMidView(const char* fileName);
-    //std::vector<Note> octaveSmall;
-    //std::vector<Note> octaveGreat;
-    std::vector<Note> octave1;
-    std::vector<Note> octave2;
-    std::vector<Note> octave3;
+private: // Add more info
+    int fileName;
+    int sampleRate;
+    int channels;
 };
 
 #endif // WAV_SOUND_H
