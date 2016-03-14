@@ -8,7 +8,6 @@
  * Copyright 2016
  **/
 
-
 #include <iostream>
 #include <iomanip>
 #include <math.h>
