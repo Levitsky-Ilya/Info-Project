@@ -11,6 +11,15 @@ MyRenderer::MyRenderer()
 	setBackground("E:/Programs/Qt/Projects/sfml/images/fon_1280x720.jpg");
 }
 
+MyRenderer::~MyRenderer()
+{
+	while (!buttons_.empty()) {
+		delete buttons_.back();
+		buttons_.pop_back();
+	}
+}
+
+
 /* Function responsible for setting background for further displaying in .draw function */
 void MyRenderer::setBackground(const std::string & path)
 {
@@ -26,7 +35,7 @@ void MyRenderer::setBackground(const std::string & path)
 
 void MyRenderer::setButton()
 {
-	//Something might be here later
+	buttons_.push_back(new StartButton("START"));
 }
 
 /*
