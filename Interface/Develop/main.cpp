@@ -16,24 +16,44 @@ int main() {
 	// Create an SFGUI. This is required before doing anything with SFGUI.
 	sfg::SFGUI sfgui;
 
+	//sfg::Desktop desktop;
+
 	// Create our main SFGUI window
 	auto window = sfg::Window::Create(sf::Style::Resize);
 
-	// Create a box with 20 pixels spacing.
-	auto box = sfg::Box::Create( sfg::Box::Orientation::HORIZONTAL, 20.f );
+	sf::Image logo;
+	auto image = sfg::Image::Create();
 
-	// Create some buttons.
+	if( logo.loadFromFile( "E:/Programs/Qt/Projects/sfml/images/4226899.png" ) ) {
+			image->SetImage( logo );
+	}
+
+	auto frame_box = sfg::Box::Create(sfg::Box::Orientation::HORIZONTAL, 20.f);
+	auto frame = sfg::Frame::Create("Notes Display");
+	frame_box->Pack(image, true, true);
+	frame->Add(frame_box);
+
+	auto separator = sfg::Separator::Create(sfg::Separator::Orientation::HORIZONTAL);
+	frame_box->Pack(separator, true, true);
+
+
+	auto box = sfg::Box::Create( sfg::Box::Orientation::VERTICAL, 20.f );
+
 	auto start_button = sfg::Button::Create( "START" );
 	auto cancel_button = sfg::Button::Create( "CANCEL" );
 
 	auto fixed = sfg::Fixed::Create();
-	fixed->Put( start_button, sf::Vector2f( 1105.f, 675.f ) );
-	fixed->Put( cancel_button, sf::Vector2f( 1205.f, 675.f ) );
+	fixed->Put( start_button, sf::Vector2f( 1105.f, 275.f ) );
+	fixed->Put( cancel_button, sf::Vector2f( 1205.f, 275.f ) );
 
+	box->Pack(frame, true, true);
 	box->Pack(fixed, false, true);
 
-	// Add the box to the window.
+
 	window->Add( box );
+
+
+	//desktop.Add(window);
 
 	// Start the game loop
 	while ( app_window.isOpen() ) {
@@ -53,14 +73,8 @@ int main() {
 		// Update the GUI, note that you shouldn't normally
 		// pass 0 seconds to the update method.
 		window->Update( 0.f );
-
-		// Clear screen
 		app_window.clear();
-
-		// Draw the GUI
 		sfgui.Display( app_window );
-
-		// Update the window
 		app_window.display();
 	}
 
