@@ -16,7 +16,7 @@ int main() {
 	// Create an SFGUI. This is required before doing anything with SFGUI.
 	sfg::SFGUI sfgui;
 
-	//sfg::Desktop desktop;
+	sfg::Desktop desktop;
 
 	// Create our main SFGUI window
 	auto window = sfg::Window::Create(sf::Style::Resize);
@@ -28,13 +28,12 @@ int main() {
 			image->SetImage( logo );
 	}
 
-	auto frame_box = sfg::Box::Create(sfg::Box::Orientation::HORIZONTAL, 20.f);
-	auto frame = sfg::Frame::Create("Notes Display");
-	frame_box->Pack(image, true, true);
-	frame->Add(frame_box);
+	auto note_window_box = sfg::Box::Create(sfg::Box::Orientation::HORIZONTAL, 20.f);
+	auto note_window = sfg::Window::Create();
+	note_window->SetTitle("Note Display");
 
-	auto separator = sfg::Separator::Create(sfg::Separator::Orientation::HORIZONTAL);
-	frame_box->Pack(separator, true, true);
+
+	note_window->Add(image);
 
 
 	auto box = sfg::Box::Create( sfg::Box::Orientation::VERTICAL, 20.f );
@@ -43,17 +42,16 @@ int main() {
 	auto cancel_button = sfg::Button::Create( "CANCEL" );
 
 	auto fixed = sfg::Fixed::Create();
-	fixed->Put( start_button, sf::Vector2f( 1105.f, 275.f ) );
-	fixed->Put( cancel_button, sf::Vector2f( 1205.f, 275.f ) );
+	fixed->Put( start_button, sf::Vector2f( 1105.f, 675.f ) );
+	fixed->Put( cancel_button, sf::Vector2f( 1205.f, 675.f ) );
 
-	box->Pack(frame, true, true);
 	box->Pack(fixed, false, true);
 
+	window->Add(box);
 
-	window->Add( box );
-
-
-	//desktop.Add(window);
+	desktop.Add(note_window);
+	desktop.Add(window);
+	desktop.BringToFront(note_window);
 
 	// Start the game loop
 	while ( app_window.isOpen() ) {
@@ -72,7 +70,7 @@ int main() {
 
 		// Update the GUI, note that you shouldn't normally
 		// pass 0 seconds to the update method.
-		window->Update( 0.f );
+		desktop.Update(.0f);
 		app_window.clear();
 		sfgui.Display( app_window );
 		app_window.display();
