@@ -15,18 +15,18 @@ Notes::Notes()
         }
     }
     else {
-        cout << "ERROR: no such file!" << endl;
+        cout << "ERROR: no such note file!" << endl;
         exit(-1);
     }
     if(notesFreqList.size() != NUMBER_OF_NOTES) {
-        cout << "ERROR: notes file is damaged" << endl;
+        cout << "ERROR: note file is damaged" << endl;
         exit(-1);
     }
 
     fin.close();
 }
 
-int Notes::generateMidView(const char *fileName)
+void Notes::generateMidView(const char *fileName)
 {
     WavFile melody(fileName);
     vector<double> amplTime;
@@ -35,7 +35,7 @@ int Notes::generateMidView(const char *fileName)
     int channels = melody.getChannels();
     int sampleRate = melody.getRate();
 
-    if (channels == 1) {
+    if ((channels == 1)&&(sampleRate == 44100)) {
         melody.getAmplitudeArray(amplTime);
 
         melodySize = amplTime.size();
@@ -43,55 +43,79 @@ int Notes::generateMidView(const char *fileName)
         /*
          * first block: from fa of 1st octave to si 4th octave
          */
-        const int FRAME_SIZE = 2048; // there sampleRate must be 44100. Definitely.
-        const int FA_FIRST = 41; // is "fa" really 41??
-        const double diffFreq = sampleRate/FRAME_SIZE;
-
-        vector<double> inFft(FRAME_SIZE);
-        vector<double> outFft;
+        const unsigned int FRAME_SIZE = 2048; // there sampleRate must be 44100. Definitely.
         NotesList amplNotes;
+        amplNotes.numFirstNote = 41; // is "fa" really 41??
+        amplNotes.numLastNote = NUMBER_OF_NOTES - 1;
+        amplNotes.diffFreq = sampleRate/FRAME_SIZE;
+
+        CFFT fft;
+
+        complex inFft[FRAME_SIZE];
+        double outFft[FRAME_SIZE];
 
         for (unsigned int i = 0; i < melodySize; i += FRAME_SIZE) {
 
-            for (int j = 0; j < FRAME_SIZE; j++) {
-                inFft[j] = amplTime[i+j];
+            for (unsigned int j = 0; j < FRAME_SIZE; j++) {
+                inFft[j] = complex(amplTime[i+j], 0.0);
             }
 
-            fftAlgorithm(inFft, outFft); // there is 100% wrong name!
+            fft.fftAlgorithm(inFft, outFft, FRAME_SIZE); //Ira's part is here
 
-            int outFreqNum = 0;
-            while(diffFreq*outFreqNum < notesFreqList[FA_FIRST])
-                outFreqNum++;
-            if (diffFreq*outFreqNum > notesFreqList[FA_FIRST + 1]) {
-                cout << "fignya with fa." << endl;
-                exit(-1);
-            }
-/*
- * next code is bred of ill imaginary
- * I try to turn freq-ampl into note-ampl
- * for each note choose the max
- * but it's first part, for first fa, so notes bellow must be with "0"
- */
-            for (int j = 0; j < FA_FIRST; j++) {
-                amplNotes.notesList[j] = 0;
-            }
-            for (int j = FA_FIRST; j < NUMBER_OF_NOTES; j++) {
-                double freq = diffFreq*outFreqNum;
-                double deltaUp = notesFreqList[j+1] - freq;
-                double deltaDown = freq - notesFreqList[j];
+            freqToNote(outFft, FRAME_SIZE, amplNotes);
 
-                if (deltaDown < deltaUp) {
-                    amplNotes.notesList[j] = outFft[outFreqNum];
-                    outFreqNum++;
-                    cout << amplNotes.notesList[j] << endl;
-                }
-                else {
-                    amplNotes.notesList[j] = outFft[outFreqNum - 1]; // wrong! wrong! wrong!
-                }
-            }
-
+            partOne.push_back(amplNotes);
         }
+//there is a checking that function do something and may be correct:
+        for (int i = 0; i < NUMBER_OF_NOTES; i++) {
+            cout << partOne[0].notesList[i] << " ";
+        }
+        cout << endl;
+//***********
     }
 
-    return 0;
+    return;
+}
+
+void Notes::freqToNote(double * const outFft, int num, NotesList &notes)
+{
+    int outNum = 0;
+    double freq = 0.0;
+    // find the first number of frequence that can be compared with first note
+
+    while(freq < notesFreqList[notes.numFirstNote]) {
+        freq += notes.diffFreq;
+        outNum++;
+    }
+    if (freq > notesFreqList[notes.numFirstNote + 1]) {
+        cout << "Wrong first note: " << notes.numFirstNote << endl;
+        exit(-1);
+    }
+
+    double deltaUp, deltaDown;
+
+    for (int j = 0; j < NUMBER_OF_NOTES; j++) {
+        notes.notesList[j] = -INFINITY; // attention!!!
+    }
+
+    int k = notes.numFirstNote;
+    for (int j = outNum; j < num && k < notes.numLastNote; j++) {
+        deltaUp = notesFreqList[k+1] - freq;
+        deltaDown = freq - notesFreqList[k];
+
+        if (deltaDown < deltaUp) {
+            if (notes.notesList[k] < outFft[j])
+                notes.notesList[k] = outFft[j];
+        }
+        else {
+            if (notes.notesList[k+1] < outFft[j])
+                notes.notesList[k+1] = outFft[j];
+        }
+
+        freq += notes.diffFreq;
+        if (freq > notesFreqList[k + 1]) {
+            k++;
+        }
+    }
+    return;
 }
