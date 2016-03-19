@@ -1,24 +1,35 @@
 #ifndef NOTES_H
 #define NOTES_H
+
 #include "fft_transform.h"
 #include "wav_sound.h"
 
-class Notes
-{
-public:
-    int generateMidView(const char* fileName);
-    //std::vector<Note> octaveGreat;
-    //std::vector<Note> octaveSmall;
-    std::vector<Note> octave1;
-    std::vector<Note> octave2;
-    std::vector<Note> octave3;
-};
+const int NUMBER_OF_NOTES = 84; //do I have 84 notes? Really???
 
 struct Note
 {
     double freq;
-    double duration;
+    int nNote;
+    int duration;
     double initTime;
+};
+
+
+struct NotesList
+{
+    double notesList[NUMBER_OF_NOTES];
+};
+
+class Notes
+{
+public:
+    Notes();
+    int generateMidView(const char* fileName);
+
+    vector<Note> notesOut;
+private:
+    vector<double> notesFreqList;
+    vector<NotesList> partOne;
 };
 
 struct AmplFreqArray //use if it's necessary
@@ -30,4 +41,3 @@ struct AmplFreqArray //use if it's necessary
 };
 
 #endif // NOTES_H
-

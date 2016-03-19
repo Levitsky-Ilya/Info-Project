@@ -9,7 +9,7 @@ using namespace std;
 class WavFile
 {
 public:
-    WavFile (const char* fileName);
+    WavFile (const char* filename);
     ~WavFile ();
     int getRate();
     int getChannels();
@@ -19,7 +19,7 @@ public:
 #endif
 
 private: // Add more info
-    int fileName;
+    const char* fileName;
     int sampleRate;
     int channels;
 };
