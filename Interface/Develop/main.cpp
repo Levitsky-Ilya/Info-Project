@@ -7,8 +7,19 @@
 #include <SFML/Graphics.hpp>
 
 int main() {
+
+	const sf::Vector2f NOTE_WINDOW_POS = {330.0f, 75.0f};
+	const sf::Vector2f NOTE_WINDOW_REQ = {900.0f, 500.0f};
+	const int BUTTON_FONT_SIZE = 24;
+	const sf::Vector2f START_CORD = {900.0f, 625.0f};
+	const sf::Vector2f CANCEL_CORD = {1050.0f, 625.0f};
+	const sf::Vector2f WINDOW_SIZE = {1280.0f, 720.f};
+	const sf::VideoMode BASE_SIZE = {1280, 720};
+
+
+
 	// Create the main SFML window
-	sf::RenderWindow app_window( sf::VideoMode( 1280, 720 ), "My program", sf::Style::Titlebar | sf::Style::Close );
+	sf::RenderWindow app_window( BASE_SIZE, "My program", sf::Style::Titlebar | sf::Style::Close );
 
 	// We have to do this because we don't use SFML to draw.
 	app_window.resetGLStates();
@@ -28,26 +39,30 @@ int main() {
 			image->SetImage( logo );
 	}
 
-	auto note_window_box = sfg::Box::Create(sfg::Box::Orientation::HORIZONTAL, 20.f);
+
 	auto note_window = sfg::Window::Create();
 	note_window->SetTitle("Note Display");
+	note_window->SetPosition(NOTE_WINDOW_POS);
+	note_window->SetRequisition(NOTE_WINDOW_REQ);
 
 
 	note_window->Add(image);
 
 
-	auto box = sfg::Box::Create( sfg::Box::Orientation::VERTICAL, 20.f );
+	auto box = sfg::Box::Create( sfg::Box::Orientation::VERTICAL );
 
 	auto start_button = sfg::Button::Create( "START" );
 	auto cancel_button = sfg::Button::Create( "CANCEL" );
+	desktop.SetProperty("Button", "FontSize", BUTTON_FONT_SIZE);
 
 	auto fixed = sfg::Fixed::Create();
-	fixed->Put( start_button, sf::Vector2f( 1105.f, 675.f ) );
-	fixed->Put( cancel_button, sf::Vector2f( 1205.f, 675.f ) );
+	fixed->Put(start_button, sf::Vector2f(START_CORD));
+	fixed->Put(cancel_button, sf::Vector2f(CANCEL_CORD));
 
 	box->Pack(fixed, false, true);
 
 	window->Add(box);
+	window->SetRequisition(WINDOW_SIZE);
 
 	desktop.Add(note_window);
 	desktop.Add(window);
