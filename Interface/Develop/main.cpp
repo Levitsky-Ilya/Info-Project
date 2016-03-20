@@ -8,11 +8,13 @@
 
 int main() {
 
-	const sf::Vector2f NOTE_WINDOW_POS = {330.0f, 75.0f};
+	const sf::Vector2f NOTE_WINDOW_POS = {330.0f, 125.0f};
 	const sf::Vector2f NOTE_WINDOW_REQ = {900.0f, 500.0f};
+	const sf::Vector2f ENTRY_REQ = {700.0f, 25.0f};
 	const int BUTTON_FONT_SIZE = 24;
-	const sf::Vector2f START_CORD = {900.0f, 625.0f};
-	const sf::Vector2f CANCEL_CORD = {1050.0f, 625.0f};
+	const sf::Vector2f START_CORD = {250.0f, 650.0f};
+	const sf::Vector2f CANCEL_CORD = {400.0f, 650.0f};
+	const sf::Vector2f LOGO_CORD = {450.0f, .0f};
 	const sf::Vector2f WINDOW_SIZE = {1280.0f, 720.f};
 	const sf::VideoMode BASE_SIZE = {1280, 720};
 
@@ -32,34 +34,51 @@ int main() {
 	// Create our main SFGUI window
 	auto window = sfg::Window::Create(sf::Style::Resize);
 
-	sf::Image logo;
-	auto image = sfg::Image::Create();
+	auto table = sfg::Table::Create();
 
-	if( logo.loadFromFile( "E:/Programs/Qt/Projects/sfml/images/4226899.png" ) ) {
-			image->SetImage( logo );
+	sf::Image notes;
+	auto note_image = sfg::Image::Create();
+
+	if( notes.loadFromFile( "E:/Programs/Qt/Projects/sfml/images/note.png" ) ) {
+			note_image->SetImage( notes );
 	}
 
+	sf::Image logo;
+	auto logo_image = sfg::Image::Create();
+
+	if( logo.loadFromFile( "E:/Programs/Qt/Projects/sfml/images/mipt_logo.png" ) ) {
+			logo_image->SetImage( logo );
+	}
 
 	auto note_window = sfg::Window::Create();
 	note_window->SetTitle("Note Display");
 	note_window->SetPosition(NOTE_WINDOW_POS);
 	note_window->SetRequisition(NOTE_WINDOW_REQ);
+	note_window->Add(note_image);
 
+	auto box = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
 
-	note_window->Add(image);
+	auto label = sfg::Label::Create("  Please type your file path:");
 
+	auto entry = sfg::Entry::Create("File path...");
+	entry->SetRequisition(ENTRY_REQ);
 
-	auto box = sfg::Box::Create( sfg::Box::Orientation::VERTICAL );
-
-	auto start_button = sfg::Button::Create( "START" );
-	auto cancel_button = sfg::Button::Create( "CANCEL" );
+	auto start_button = sfg::Button::Create( " START " );
+	auto cancel_button = sfg::Button::Create( " CANCEL " );
 	desktop.SetProperty("Button", "FontSize", BUTTON_FONT_SIZE);
 
-	auto fixed = sfg::Fixed::Create();
-	fixed->Put(start_button, sf::Vector2f(START_CORD));
-	fixed->Put(cancel_button, sf::Vector2f(CANCEL_CORD));
 
-	box->Pack(fixed, false, true);
+	auto fixed = sfg::Fixed::Create();
+	fixed->Put(start_button, START_CORD);
+	fixed->Put(cancel_button, CANCEL_CORD);
+	fixed->Put(logo_image, LOGO_CORD);
+
+	table->Attach(entry, sf::Rect<sf::Uint32>(1, 3, 1, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
+	table->Attach(label, sf::Rect<sf::Uint32>(1, 2, 1, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
+	table->Attach(fixed, sf::Rect<sf::Uint32>(2, 1, 1, 40), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
+
+	box->Pack(table);
+
 
 	window->Add(box);
 	window->SetRequisition(WINDOW_SIZE);
