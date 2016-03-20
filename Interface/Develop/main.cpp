@@ -8,6 +8,7 @@
 
 int main() {
 
+	const sf::Vector2f NOTE_WINDOW_SCR_REQ = {900.0f, 480.0f};
 	const sf::Vector2f NOTE_WINDOW_POS = {330.0f, 125.0f};
 	const sf::Vector2f NOTE_WINDOW_REQ = {900.0f, 500.0f};
 	const sf::Vector2f ENTRY_REQ = {700.0f, 25.0f};
@@ -39,7 +40,7 @@ int main() {
 	sf::Image notes;
 	auto note_image = sfg::Image::Create();
 
-	if( notes.loadFromFile( "E:/Programs/Qt/Projects/sfml/images/note.png" ) ) {
+	if( notes.loadFromFile( "E:/Programs/Qt/Projects/sfml/images/cat.jpg" ) ) {
 			note_image->SetImage( notes );
 	}
 
@@ -50,11 +51,23 @@ int main() {
 			logo_image->SetImage( logo );
 	}
 
+	auto note_window_scr_box = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
+	note_window_scr_box->Pack(note_image, true, true);
+
+	auto note_window_scr = sfg::ScrolledWindow::Create();
+	note_window_scr->SetScrollbarPolicy( sfg::ScrolledWindow::HORIZONTAL_NEVER | sfg::ScrolledWindow::VERTICAL_AUTOMATIC );
+	note_window_scr->SetRequisition(NOTE_WINDOW_SCR_REQ);
+	note_window_scr->AddWithViewport(note_window_scr_box);
+
+	auto note_window_box = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
+	note_window_box->Pack(note_window_scr, false, true);
+
 	auto note_window = sfg::Window::Create();
 	note_window->SetTitle("Note Display");
 	note_window->SetPosition(NOTE_WINDOW_POS);
 	note_window->SetRequisition(NOTE_WINDOW_REQ);
-	note_window->Add(note_image);
+
+	note_window->Add(note_window_box);
 
 	auto box = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
 
@@ -87,6 +100,7 @@ int main() {
 	desktop.Add(window);
 	desktop.BringToFront(note_window);
 
+	sf::Clock clock;
 	// Start the game loop
 	while ( app_window.isOpen() ) {
 		// Process events
@@ -95,6 +109,7 @@ int main() {
 		while ( app_window.pollEvent( event ) ) {
 			// Handle events
 			window->HandleEvent( event );
+			note_window->HandleEvent( event );
 
 			// Close window : exit
 			if ( event.type == sf::Event::Closed ) {
@@ -104,7 +119,9 @@ int main() {
 
 		// Update the GUI, note that you shouldn't normally
 		// pass 0 seconds to the update method.
-		desktop.Update(.0f);
+		float dt = clock.restart().asSeconds();
+		desktop.Update(dt);
+		note_window->Update(dt);
 		app_window.clear();
 		sfgui.Display( app_window );
 		app_window.display();
