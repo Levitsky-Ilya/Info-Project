@@ -1,8 +1,9 @@
 #include "notes.h"
 #include <fstream>
+#include <thread>
 
 /*
- * Read definite frequances from file to notesFreq
+ * Read initial frequances from file to notesFreqList
  */
 Notes::Notes()
 {
@@ -30,51 +31,85 @@ void Notes::generateMidView(const char *fileName)
 {
     WavFile melody(fileName);
     vector<double> amplTime;
-    size_t melodySize;
 
     int channels = melody.getChannels();
     int sampleRate = melody.getRate();
 
     if ((channels == 1)&&(sampleRate == 44100)) {
         melody.getAmplitudeArray(amplTime);
+        cout << amplTime.max_size() << endl;
 
-        melodySize = amplTime.size();
+        //there I try to use threads, but it's only example to compare fft
+        //with and without nulls
+        thread thr1(executeBlock, this, 2048, sampleRate, 41,
+                    NUMBER_OF_NOTES - 1, WITHOUT_NULLS, ref(amplTime));
+        thread thr2(executeBlock, this, 4096, sampleRate, 41,
+                    NUMBER_OF_NOTES - 1, WITH_NULLS, ref(amplTime));
 
-        /*
-         * first block: from fa of 1st octave to si 4th octave
-         */
-        const unsigned int FRAME_SIZE = 2048; // there sampleRate must be 44100. Definitely.
-        NotesList amplNotes;
-        amplNotes.numFirstNote = 41; // is "fa" really 41??
-        amplNotes.numLastNote = NUMBER_OF_NOTES - 1;
-        amplNotes.diffFreq = sampleRate/FRAME_SIZE;
+        thr1.join();
+        thr2.join();
+        //***************
 
-        CFFT fft;
-
-        complex inFft[FRAME_SIZE];
-        double outFft[FRAME_SIZE];
-
-        for (unsigned int i = 0; i < melodySize; i += FRAME_SIZE) {
-
-            for (unsigned int j = 0; j < FRAME_SIZE; j++) {
-                inFft[j] = complex(amplTime[i+j], 0.0);
-            }
-
-            fft.fftAlgorithm(inFft, outFft, FRAME_SIZE); //Ira's part is here
-
-            freqToNote(outFft, FRAME_SIZE, amplNotes);
-
-            partOne.push_back(amplNotes);
-        }
 //there is a checking that function do something and may be correct:
-        for (int i = 0; i < NUMBER_OF_NOTES; i++) {
-            cout << partOne[0].notesList[i] << " ";
+        for (int i = 41; i < NUMBER_OF_NOTES; i++) {
+            cout << partFirst[0].notesList[i] << " ";
         }
-        cout << endl;
+        cout << endl << endl;
+
+        for (int i = 41; i < NUMBER_OF_NOTES; i++) {
+            cout << partSecond[0].notesList[i] << " ";
+        }
 //***********
     }
 
     return;
+}
+
+void Notes::executeBlock(unsigned int frameSize, int sampleRate,
+                         int firstNote, int lastNote, TypeFrame typeFrame,
+                         vector<double> &amplTime)
+{
+    NotesList amplNotes;
+    amplNotes.numFirstNote = firstNote;
+    amplNotes.numLastNote = lastNote;
+    amplNotes.diffFreq = sampleRate/frameSize;
+
+    CFFT fft;
+
+    complex inFft[frameSize];
+    double outFft[frameSize];
+    size_t melodySize = amplTime.size();
+
+    if (typeFrame == WITH_NULLS) {
+        frameSize /= 2;
+    }
+
+    for (unsigned int i = 0; i < melodySize; i += frameSize) {
+
+        if (typeFrame == WITHOUT_NULLS) {
+            for (unsigned int j = 0; j < frameSize; j++) {
+                inFft[j] = complex(amplTime[i+j], 0.0);
+            }
+        }
+        else {
+            for (unsigned int j = 0; j < frameSize; j++) {
+                inFft[j >> 1] = complex(amplTime[i+(j >> 1)], 0.0);
+                inFft[(j >> 1) + 1] = complex(0.0, 0.0);
+            }
+        }
+
+        fft.fftAlgorithm(inFft, outFft, frameSize);
+
+        freqToNote(outFft, frameSize, amplNotes);
+
+//!!! there are solution only for an example with first block!!!
+        if (typeFrame == WITHOUT_NULLS) {
+            partFirst.push_back(amplNotes);
+        }
+        else {
+            partSecond.push_back(amplNotes);
+        }
+    }
 }
 
 void Notes::freqToNote(double * const outFft, int num, NotesList &notes)

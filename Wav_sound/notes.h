@@ -5,6 +5,7 @@
 #include "../fftAlgorithm/fft.h"
 
 const int NUMBER_OF_NOTES = 84; //do I have 84 notes? Really???
+enum TypeFrame {WITH_NULLS, WITHOUT_NULLS};
 
 struct Note
 {
@@ -32,8 +33,12 @@ public:
     vector<Note> notesOut;
 private:
     vector<double> notesFreqList; // initial list of notes
-    vector<NotesList> partOne;
-    void freqToNote(double*const outFft, int num, NotesList &amplNotes);
+    vector<NotesList> partFirst;
+    vector<NotesList> partSecond;
+    void executeBlock(unsigned int frameSize, int sampleRate,
+                      int firstNote, int lastNote, TypeFrame typeFrame,
+                      vector<double>& amplTime);
+    void freqToNote(double * const outFft, int num, NotesList &amplNotes);
 };
 
 #endif // NOTES_H
