@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cstring>
+#include <cstdio>
 #include <windows.h>
 
 const int SIZE_OF_FILE = 100; //For example
@@ -10,7 +11,7 @@ using namespace std;
 //argv should have this \/ type for CreateFile() func, but warnings is shown!
 //I don't think that argument is iterprerted right
 
-int main(int argc, wchar_t* argv[])
+int main(int argc, char* argv[])
 //form of main {_tmain} SUPPORTS wchar_t as argument, but code doesn't compile that way:
 /* int _tmain(int argc, wchar_t* argv[])   //  WinMain@16? */
 {
@@ -22,7 +23,7 @@ int main(int argc, wchar_t* argv[])
     }
 
     cout << "argument: "<< argv[1] << endl;
-    HANDLE file; //HANDLE???
+
     errno_t err;
 
     /*
@@ -34,17 +35,13 @@ int main(int argc, wchar_t* argv[])
       exit(EXIT_FAILURE);
     }
     */
-
-    //wchar_t ?
+    
     //Info about function:
     //https://msdn.microsoft.com/ru-ru/library/windows/desktop/aa363858(v=vs.85).aspx
-    file = CreateFile  (argv[1],    // <- how to transform from char* to wchar_t*?
-                        GENERIC_READ,
-                        0,
-                        NULL,
-                        OPEN_EXISTING,
-                        FILE_ATTRIBUTE_READONLY,
-                        NULL);
+    
+    //WHY error 123 occurs???
+    HANDLE file = CreateFile  ((wchar_t*)argv[1], GENERIC_READ, 0, NULL,
+            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
     err = GetLastError();   //Returns error of functions realised in windows.h
     cout << "Creating file err: " << err << endl;
@@ -58,6 +55,9 @@ int main(int argc, wchar_t* argv[])
                                             NULL);
     err = GetLastError();
     cout << "File mapping err: " << err << endl;
+
+    printf_s("pointer is %d\n",mapped);
+    //cout << mapped << endl;
 
     system("pause");
     return 0;
