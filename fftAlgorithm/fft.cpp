@@ -83,32 +83,6 @@ void CFFT::Rearrange(const complex *const Input, complex *const Output, const un
 	}
 }
 
-//   Inplace version of rearrange function
-void CFFT::Rearrange(complex *const Data, const unsigned int N)
-{
-	//   Swap position
-	unsigned int Target = 0;
-	//   Process all positions of input signal
-	for (unsigned int Position = 0; Position < N; ++Position)
-	{
-		//   Only for not yet swapped entries
-		if (Target > Position)
-		{
-			//   Swap entries
-			const complex Temp(Data[Target]);
-			Data[Target] = Data[Position];
-			Data[Position] = Temp;
-		}
-		//   Bit mask
-		unsigned int Mask = N;
-		//   While bit is set
-		while (Target & (Mask >>= 1))
-			//   Drop bit
-			Target &= ~Mask;
-		//   The current bit is 0 - set it
-		Target |= Mask;
-	}
-}
 
 //   FFT implementation
 void CFFT::Perform(complex *const Data, const unsigned int N, const bool Inverse /* = false */)
