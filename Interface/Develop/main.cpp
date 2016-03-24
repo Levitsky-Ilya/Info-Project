@@ -8,14 +8,16 @@
 
 int main() {
 
-	const sf::Vector2f NOTE_WINDOW_SCR_REQ = {900.0f, 480.0f};
-	const sf::Vector2f NOTE_WINDOW_POS = {330.0f, 100.0f};
-	const sf::Vector2f NOTE_WINDOW_REQ = {900.0f, 500.0f};
+	const sf::Vector2f NOTE_WINDOW_SCR_REQ = {800.0f, 480.0f};
+	const sf::Vector2f NOTE_WINDOW_POS = {425.0f, 100.0f};
+	const sf::Vector2f NOTE_WINDOW_REQ = {800.0f, 500.0f};
+	const sf::Vector2f SONG_PATH_REQ = {250.0f, .0f};
 	const sf::Vector2f SONG_WINDOW_SCR_REQ = {250.0f, 555.0f};
 	const sf::Vector2f SONG_WINDOW_POS = {25.0f, 100.0f};
-	const sf::Vector2f SONG_WINDOW_REQ = {250.0f, 575.0f};
+	const sf::Vector2f SONG_WINDOW_REQ = {375.0f, 575.0f};
 	const sf::Vector2f ENTRY_REQ = {700.0f, 25.0f};
 	const int BUTTON_FONT_SIZE = 24;
+	const int LOAD_FONT_SIZE = 12;
 	const sf::Vector2f START_COORD = {125.0f, 550.0f};
 	const sf::Vector2f CANCEL_COORD = {350.0f, 550.0f};
 	const sf::Vector2f GETIMAGE_COORD = {575.0f, 550.0f};
@@ -38,8 +40,6 @@ int main() {
 
 	// Create our main SFGUI window
 	auto window = sfg::Window::Create(sf::Style::Resize);
-
-	auto table = sfg::Table::Create();
 
 	sf::Image notes;
 	auto note_image = sfg::Image::Create();
@@ -77,12 +77,28 @@ int main() {
 	//Editing song window
 	auto song_window_scr_box = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
 	auto space = sfg::Label::Create(" ");
-	song_window_scr_box->Pack(space, true, true);
 	auto song_path = sfg::Label::Create("	C:/MyProgram/Music/MIPT/Main_Theme.wav");
-	song_path->SetRequisition(sf::Vector2f(250.0f, .0f));
-	song_window_scr_box->Pack(song_path, true, true);
-	auto song_separator = sfg::Separator::Create(sfg::Separator::Orientation::HORIZONTAL);
-	song_window_scr_box->Pack(song_separator, true, true);
+	song_path->SetRequisition(SONG_PATH_REQ);
+	auto load_button = sfg::Button::Create("LOAD");
+	load_button->SetId("load_button");
+	//font size set below after setting font size for every button to be BUTTON_FONT_SIZE
+	auto space_ = sfg::Label::Create(" ");
+	auto song_path_ = sfg::Label::Create("	C:/MyProgram/Music/BATAREYKA.wav");
+	song_path_->SetRequisition(SONG_PATH_REQ);
+	auto load_button_ = sfg::Button::Create("LOAD");
+	load_button_->SetId("load_button");
+	//font size set below after setting font size for every button to be BUTTON_FONT_SIZE
+
+	auto song_table = sfg::Table::Create();
+	song_table->Attach(space, sf::Rect<sf::Uint32>(1, 1, 2, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
+	song_table->Attach(song_path, sf::Rect<sf::Uint32>(1, 2, 1, 1), sfg::Table::EXPAND, sfg::Table::FILL, sf::Vector2f(10.0f, 5.0f));
+	song_table->Attach(load_button, sf::Rect<sf::Uint32>(2, 2, 1, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
+
+	song_table->Attach(space_, sf::Rect<sf::Uint32>(1, 3, 2, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
+	song_table->Attach(song_path_, sf::Rect<sf::Uint32>(1, 4, 1, 1), sfg::Table::EXPAND, sfg::Table::FILL, sf::Vector2f(15.0f, 5.0f));
+	song_table->Attach(load_button_, sf::Rect<sf::Uint32>(2, 4, 1, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
+
+	song_window_scr_box->Pack(song_table);
 
 	auto song_window_scr = sfg::ScrolledWindow::Create();
 	song_window_scr->SetScrollbarPolicy( sfg::ScrolledWindow::HORIZONTAL_AUTOMATIC | sfg::ScrolledWindow::VERTICAL_AUTOMATIC );
@@ -111,6 +127,8 @@ int main() {
 	auto cancel_button = sfg::Button::Create("   CANCEL   ");
 	auto getimage_button = sfg::Button::Create(" GET IMAGE ");
 	desktop.SetProperty("Button", "FontSize", BUTTON_FONT_SIZE);
+	desktop.SetProperty("Button#load_button", "FontSize", LOAD_FONT_SIZE);
+
 
 	auto fixed_b = sfg::Fixed::Create();
 	fixed_b->Put(start_button, START_COORD);
@@ -121,6 +139,7 @@ int main() {
 	fixed_img->Put(logo_image, LOGO_COORD);
 
 	//Creating table for displaying elements on certain places
+	auto table = sfg::Table::Create();
 	table->Attach(entry, sf::Rect<sf::Uint32>(1, 3, 2, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
 	table->Attach(label, sf::Rect<sf::Uint32>(1, 2, 2, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
 	table->Attach(fixed_img, sf::Rect<sf::Uint32>(3, 1, 1, 10), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
