@@ -44,14 +44,14 @@ int main() {
 	sf::Image notes;
 	auto note_image = sfg::Image::Create();
 
-	if( notes.loadFromFile( "E:/Programs/Qt/Projects/sfml/images/cat.jpg" ) ) {
+	if( notes.loadFromFile( "../sfml/images/cat.jpg" ) ) {
 			note_image->SetImage( notes );
 	}
 
 	sf::Image logo;
 	auto logo_image = sfg::Image::Create();
 
-	if( logo.loadFromFile( "E:/Programs/Qt/Projects/sfml/images/mipt_logo_long.png" ) ) {
+	if( logo.loadFromFile( "../sfml/images/mipt_logo_long.png" ) ) {
 			logo_image->SetImage( logo );
 	}
 
@@ -78,7 +78,7 @@ int main() {
 	auto song_window_scr_box = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
 	auto space = sfg::Label::Create(" ");
 	song_window_scr_box->Pack(space, true, true);
-	auto song_path = sfg::Label::Create("	C:/Music/MIPT/Main_Theme.wav");
+	auto song_path = sfg::Label::Create("	C:/MyProgram/Music/MIPT/Main_Theme.wav");
 	song_path->SetRequisition(sf::Vector2f(250.0f, .0f));
 	song_window_scr_box->Pack(song_path, true, true);
 	auto song_separator = sfg::Separator::Create(sfg::Separator::Orientation::HORIZONTAL);
