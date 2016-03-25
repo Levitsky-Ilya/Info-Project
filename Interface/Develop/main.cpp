@@ -118,10 +118,13 @@ int main() {
 	//Editing main window
 	auto box = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
 
-	auto label = sfg::Label::Create("  Please type your file path:");
+	auto label = sfg::Label::Create("  Please type your file path and press 'LOAD':");
 
 	auto entry = sfg::Entry::Create("File path...");
 	entry->SetRequisition(ENTRY_REQ);
+
+	auto entry_load_button = sfg::Button::Create("LOAD");
+	entry_load_button->SetId("load_button");
 
 	auto start_button = sfg::Button::Create("    START    ");
 	auto cancel_button = sfg::Button::Create("   CANCEL   ");
@@ -142,8 +145,9 @@ int main() {
 	auto table = sfg::Table::Create();
 	table->Attach(entry, sf::Rect<sf::Uint32>(1, 3, 2, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
 	table->Attach(label, sf::Rect<sf::Uint32>(1, 2, 2, 1), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
-	table->Attach(fixed_img, sf::Rect<sf::Uint32>(3, 1, 1, 10), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
-	table->Attach(fixed_b, sf::Rect<sf::Uint32>(2, 11, 2, 30), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
+	table->Attach(entry_load_button, sf::Rect<sf::Uint32>(3, 3, 1, 1), sfg::Table::EXPAND, sfg::Table::FILL, sf::Vector2f(.0f, .0f));
+	table->Attach(fixed_img, sf::Rect<sf::Uint32>(4, 1, 1, 10), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
+	table->Attach(fixed_b, sf::Rect<sf::Uint32>(2, 11, 3, 30), sfg::Table::EXPAND, sfg::Table::EXPAND, sf::Vector2f(.0f, .0f));
 
 	box->Pack(table);
 
