@@ -12,28 +12,13 @@
 #include "complex.h"
 #include "fft.h"
 
+#define M_PI 3.14159265358979
+
 //   FORWARD FOURIER TRANSFORM
 //     Input  - input data
 //     Output - transform result
 //     N      - length of both input data and result
-/*
-bool CFFT::Forward(const complex *const Input, complex *const Output, const unsigned int N)
-{
-	//   Check input parameters
-	if (!Input || !Output || N < 1 || N & (N - 1))
-		return false;
-	//   Initialize data
-	Rearrange(Input, Output, N);
-	//   Call FFT implementation
-	Perform(Output, N);
-	//   Succeeded
-	return true;
-}
-*/
 
-//   FORWARD FOURIER TRANSFORM, INPLACE VERSION
-//     Data - both input data and output
-//     N    - length of input data
 bool CFFT::fftAlgorithm(complex *const Input, double *const Output, const unsigned int N)
 {
 	//   Check input parameters
@@ -51,6 +36,23 @@ bool CFFT::fftAlgorithm(complex *const Input, double *const Output, const unsign
 	//   Succeeded
 	return true;
 }
+
+
+ double CFFT::Hamming(unsigned int i, unsigned int N)
+{
+    double a = 0;
+    a =  0.54-0.46*cos(2*M_PI*N/(i-1));
+    return a;
+
+}
+
+ void CFFT::applyWindow(complex *Data, unsigned int N)
+ {
+     for (unsigned int i = 0; i < N; i++){
+         Data[i]*=Hamming(i, N);
+         }
+ }
+
 
 //
 void CFFT::countAmplitude(complex *const Input, double *const Output, const unsigned int N)
@@ -122,13 +124,6 @@ void CFFT::Perform(complex *const Data, const unsigned int N, const bool Inverse
 	}
 }
 
-//   Scaling of inverse FFT result
-void CFFT::Scale(complex *const Data, const unsigned int N)
-{
-	const double Factor = 1. / double(N);
-	//   Scale all data entries
-	for (unsigned int Position = 0; Position < N; ++Position)
-		Data[Position] *= Factor;
-}
+
 
 
