@@ -35,6 +35,7 @@ private:
     vector<double> notesFreqList; // initial list of notes
     vector<NotesList> partFirst;
     vector<NotesList> partSecond;
+    int maxNote(NotesList& ampl);
     void executeBlock(unsigned int frameSize, int sampleRate,
                       int firstNote, int lastNote, TypeFrame typeFrame,
                       vector<double>& amplTime);

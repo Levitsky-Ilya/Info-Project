@@ -37,7 +37,6 @@ void Notes::generateMidView(const char *fileName)
 
     if ((channels == 1)&&(sampleRate == 44100)) {
         melody.getAmplitudeArray(amplTime);
-        cout << amplTime.max_size() << endl;
 
         //there I try to use threads, but it's only example to compare fft
         //with and without nulls
@@ -52,13 +51,17 @@ void Notes::generateMidView(const char *fileName)
 
 //there is a checking that function do something and may be correct:
         for (int i = 41; i < NUMBER_OF_NOTES; i++) {
-            cout << partFirst[0].notesList[i] << " ";
+            cout << partFirst[1].notesList[i] << " ";
         }
         cout << endl << endl;
 
         for (int i = 41; i < NUMBER_OF_NOTES; i++) {
-            cout << partSecond[0].notesList[i] << " ";
+            cout << partSecond[1].notesList[i] << " ";
         }
+        int i = maxNote(partFirst[1]);
+        cout << endl << "first max = " << i << endl;
+        i = maxNote(partSecond[1]);
+        cout << "second max = " << i << endl;
 //***********
     }
 
@@ -153,4 +156,14 @@ void Notes::freqToNote(double * const outFft, int num, NotesList &notes)
         }
     }
     return;
+}
+
+int Notes::maxNote(NotesList& ampl)
+{
+    int note = 0;
+    for(int i = 0; i < NUMBER_OF_NOTES; i++) {
+        if (ampl.notesList[i] > ampl.notesList[note])
+            note = i;
+    }
+    return note;
 }
