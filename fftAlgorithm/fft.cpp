@@ -41,7 +41,7 @@ bool CFFT::fftAlgorithm(complex *const Input, double *const Output, const unsign
  double CFFT::Hamming(unsigned int i, unsigned int N)
 {
     double a = 0;
-    a =  0.54-0.46*cos(2*M_PI*N/(i-1));
+    a =  0.54-0.46*cos(2*M_PI*i/(N-1));
     return a;
 
 }
