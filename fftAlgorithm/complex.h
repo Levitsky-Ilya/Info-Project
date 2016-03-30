@@ -14,8 +14,8 @@ class complex
 {
 protected:
 	//   Internal presentation - real and imaginary parts
-	double m_re;
-	double m_im;
+    float m_re;
+    float m_im;
 
 public:
 	//   Imaginary unity
@@ -24,11 +24,11 @@ public:
 
 	//   Constructors
 	complex(): m_re(0.), m_im(0.) {}
-	complex(double re, double im): m_re(re), m_im(im) {}
-	complex(double val): m_re(val), m_im(0.) {}
+    complex(float re, float im): m_re(re), m_im(im) {}
+    complex(float val): m_re(val), m_im(0.) {}
 
 	//   Assignment
-	complex& operator= (const double val)
+    complex& operator= (const float val)
 	{
 		m_re = val;
 		m_im = 0.;
@@ -36,8 +36,8 @@ public:
 	}
 
 	//   Basic operations - taking parts
-	double re() const { return m_re; }
-	double im() const { return m_im; }
+    float re() const { return m_re; }
+    float im() const { return m_im; }
 
 	//   Conjugate number
 	complex conjugate() const
@@ -46,19 +46,19 @@ public:
 	}
 
 	//   Norm   
-    double norm() const
+    float norm() const
 	{
 		return m_re * m_re + m_im * m_im;
 	}
 
     //   findMagnitude
-    double countMagnitude() const
+    float countMagnitude() const
     {
         return sqrt(m_re * m_re + m_im * m_im);
     }
 
     //   findAmplitude
-    double countAmplitude() const
+    float countAmplitude() const
     {
         return 20*log10(sqrt(m_re * m_re + m_im * m_im));
     }
@@ -83,7 +83,7 @@ public:
 
 	complex operator/ (const complex& other) const
 	{
-		const double denominator = other.m_re * other.m_re + other.m_im * other.m_im;
+        const float denominator = other.m_re * other.m_re + other.m_im * other.m_im;
 		return complex((m_re * other.m_re + m_im * other.m_im) / denominator,
 			(m_im * other.m_re - m_re * other.m_im) / denominator);
 	}
@@ -106,7 +106,7 @@ public:
 
 	complex& operator*= (const complex& other)
 	{
-		const double temp = m_re;
+        const float temp = m_re;
 		m_re = m_re * other.m_re - m_im * other.m_im;
 		m_im = m_im * other.m_re + temp * other.m_im;
 		return *this;
@@ -114,8 +114,8 @@ public:
 
 	complex& operator/= (const complex& other)
 	{
-		const double denominator = other.m_re * other.m_re + other.m_im * other.m_im;
-		const double temp = m_re;
+        const float denominator = other.m_re * other.m_re + other.m_im * other.m_im;
+        const float temp = m_re;
 		m_re = (m_re * other.m_re + m_im * other.m_im) / denominator;
 		m_im = (m_im * other.m_re - temp * other.m_im) / denominator;
 		return *this;
@@ -147,70 +147,70 @@ public:
 		return temp;
 	}
 
-	complex operator+ (const double val) const
+    complex operator+ (const float val) const
 	{
 		return complex(m_re + val, m_im);
 	}
 
-	complex operator- (const double val) const
+    complex operator- (const float val) const
 	{
 		return complex(m_re - val, m_im);
 	}
 
-	complex operator* (const double val) const
+    complex operator* (const float val) const
 	{
 		return complex(m_re * val, m_im * val);
 	}
 
-	complex operator/ (const double val) const
+    complex operator/ (const float val) const
 	{
 		return complex(m_re / val, m_im / val);
 	}
 
-	complex& operator+= (const double val)
+    complex& operator+= (const float val)
 	{
 		m_re += val;
 		return *this;
 	}
 
-	complex& operator-= (const double val)
+    complex& operator-= (const float val)
 	{
 		m_re -= val;
 		return *this;
 	}
 
-	complex& operator*= (const double val)
+    complex& operator*= (const float val)
 	{
 		m_re *= val;
 		m_im *= val;
 		return *this;
 	}
 
-	complex& operator/= (const double val)
+    complex& operator/= (const float val)
 	{
 		m_re /= val;
 		m_im /= val;
 		return *this;
 	}
 
-	friend complex operator+ (const double left, const complex& right)
+    friend complex operator+ (const float left, const complex& right)
 	{
 		return complex(left + right.m_re, right.m_im);
 	}
 
-	friend complex operator- (const double left, const complex& right)
+    friend complex operator- (const float left, const complex& right)
 	{
 		return complex(left - right.m_re, -right.m_im);
 	}
 
-	friend complex operator* (const double left, const complex& right)
+    friend complex operator* (const float left, const complex& right)
 	{
 		return complex(left * right.m_re, left * right.m_im);
 	}
 
-	friend complex operator/ (const double left, const complex& right)
+    friend complex operator/ (const float left, const complex& right)
 	{
-		const double denominator = right.m_re * right.m_re + right.m_im * right.m_im;
+        const float denominator = right.m_re * right.m_re + right.m_im * right.m_im;
 		return complex(left * right.m_re / denominator,
 			-left * right.m_im / denominator);
 	}
@@ -226,22 +226,22 @@ public:
 		return m_re != other.m_re || m_im != other.m_im;
 	}
 
-	bool operator== (const double val) const
+    bool operator== (const float val) const
 	{
 		return m_re == val && m_im == 0.;
 	}
 
-	bool operator!= (const double val) const
+    bool operator!= (const float val) const
 	{
 		return m_re != val || m_im != 0.;
 	}
 
-	friend bool operator== (const double left, const complex& right)
+    friend bool operator== (const float left, const complex& right)
 	{
 		return left == right.m_re && right.m_im == 0.;
 	}
 
-	friend bool operator!= (const double left, const complex& right)
+    friend bool operator!= (const float left, const complex& right)
 	{
 		return left != right.m_re || right.m_im != 0.;
 	}

@@ -17,11 +17,10 @@ class CFFT
 public:
 	//   FORWARD FOURIER TRANSFORM
 	//     Input  - input data
-        //     Output - transform result (amplitudes)
+    //     Output - transform result (amplitudes)
 	//     N      - length of both input data and result
-     bool fftAlgorithm(complex *const Input, double *const Output, const unsigned int N);
+     bool fftAlgorithm(complex *const Input, float *const Output, const unsigned int N);
      void applyWindow(complex *const Data, const unsigned int N);
-     double Hamming(unsigned int i, unsigned int N);
 
 
 protected:
@@ -30,7 +29,8 @@ protected:
 	//   FFT implementation
 	static void Perform(complex *const Data, const unsigned int N, const bool Inverse = false);
     //  Calculating amplitude
-    void countAmplitude(complex *const Input, double *const Output, const unsigned int N);
+    void countAmplitude(complex *const Input, float *const Output, const unsigned int N);
+    float Hamming(unsigned int i, unsigned int N);
 
 };
 
