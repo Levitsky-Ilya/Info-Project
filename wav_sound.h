@@ -1,3 +1,12 @@
+/**
+ * wav_sound.cpp
+ *
+ * Description: WavFile class header.
+ *
+ * @author Ilya Levitsky ilya.levitskiy@phystech.edu
+ * Copyright 2016
+ **/
+
 #ifndef WAV_SOUND_H
 #define WAV_SOUND_H
 
@@ -79,8 +88,8 @@ private:
     char* fileName_;
     float AllDurationSeconds;
 
-    template <class T>
     void fillVector(vector<float> &amplTime);
+    float strtoampl(const char* str, const unsigned short depth);
 
     int DurationMinutes;
     float DurationSeconds;

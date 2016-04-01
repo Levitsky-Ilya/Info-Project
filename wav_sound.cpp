@@ -1,13 +1,18 @@
 /**
  * wav_sound.cpp
  *
- * Description: !!!
+ * Description: WavFile class realiation.
+ *              Stores info about file.
+ *              Provides methods to recieve some info.
+ *              Provides method to get vector<float> of ampitudes
+ *              in range [-1; 1].
  *
  * @author Ilya Levitsky ilya.levitskiy@phystech.edu
  * Copyright 2016
  **/
 
 #define DEBUG 0
+#define TIME 0
 
 #include <wav_sound.h>
 
@@ -15,6 +20,8 @@
 #include <fstream>
 #include <iomanip>
 #include <cstring>
+#include <chrono>
+
 #include <math.h>
 #include <assert.h>
 #include <windows.h>
@@ -22,6 +29,9 @@
 using namespace std;
 
 const int BITS_IN_BYTE = 8;
+const int SECONDS_IN_MINUTE = 60;
+const int PAGE_SIZE = 4096;
+const int THREE_QUART_PAGE_SIZE = 3072;
 
 //Try to use mapping!!
 //CreateFileMapping(file, NULL, PAGE_READONLY, 0, subchunk2Size, NULL)
@@ -88,8 +98,8 @@ WavFile::WavFile (const char* fileName)
     AllDurationSeconds = 1.0f * header.subchunk2Size
                              /(header.bitsPerSample / BITS_IN_BYTE)
                              / header.numChannels / header.sampleRate;
-    DurationMinutes = (int)floor(AllDurationSeconds) / 60;
-    DurationSeconds = AllDurationSeconds - (DurationMinutes * 60);
+    DurationMinutes = (int)floor(AllDurationSeconds) / SECONDS_IN_MINUTE;
+    DurationSeconds = AllDurationSeconds - (DurationMinutes * SECONDS_IN_MINUTE);
 
     fclose(file);
 }
@@ -166,29 +176,31 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
 
     }
     */
+#if TIME
+    chrono::time_point<chrono::system_clock> start, end;
+    start = chrono::system_clock::now();
+#endif
 
-    switch (header.bitsPerSample)
+    if(header.bitsPerSample % BITS_IN_BYTE != 0 ||
+       header.bitsPerSample > sizeof(int) * BITS_IN_BYTE ||
+       header.bitsPerSample < sizeof(char) * BITS_IN_BYTE)
     {
-    case 32:
-        fillVector<int> (amplTime);
-        break;
-
-    case 16:
-        fillVector<short> (amplTime);
-        break;
-
-    case 8:
-        fillVector<char> (amplTime);
-        break;
-
-    default:
-        cout << "Unexpected depth of sounding: "
-             << header.bitsPerSample << endl;
+        //Throw exception if maxAmplitude == 0xff and depth !=8 ????
+       cout << "Unexpected depth of sounding: "
+            << header.bitsPerSample << endl;
+        exit(EXIT_FAILURE);
     }
+
+    fillVector(amplTime);
+
+#if TIME
+    end = chrono::system_clock::now();
+    chrono::duration<double> spent_time = end - start;
+    cout << "Completed for " << spent_time.count() << "s." << endl;
+#endif
 }
 
 
-template <class T>
 void WavFile::fillVector (vector<float> &amplTime)
 {
     errno_t err;
@@ -202,29 +214,62 @@ void WavFile::fillVector (vector<float> &amplTime)
 
     fseek(file, sizeof(WavHeader), SEEK_SET);
 
-    unsigned short channels = header.numChannels;
     unsigned short depth = header.bitsPerSample;
-    T amplitude;
+    unsigned short pageSize = (depth == 24? THREE_QUART_PAGE_SIZE : PAGE_SIZE);
+
+    char* buff = new char[pageSize];
+    unsigned long sizeOfFile = header.subchunk2Size;
+    unsigned long pagesTotal = sizeOfFile / pageSize;
+    unsigned long sizeOfFileRemainder = sizeOfFile % pageSize;
+    unsigned long blockAlign = header.blockAlign;
+
+#if DEBUG
+    cout << "DEBUG" << endl;
+    cout << "depth: " << depth << endl;
+    cout << "pageSize: " << pageSize << endl;
+    cout << "sizeOfFile: " << sizeOfFile << endl;
+    cout << "pagesTotal: " << pagesTotal << endl;
+    cout << "sizeOfFileRemainder: " << sizeOfFileRemainder << endl;
+    cout << "blockAlign: " << blockAlign << endl << endl;
+    system("pause");
+#endif
+
     float tmpAmplitude;
-    unsigned int maxAmplitude = (depth==32? 0x7fffffff :
-                                            depth==16? 0x7fff : 0xff);
-    unsigned long BlocksTotal = header.subchunk2Size/header.blockAlign;
+    for(unsigned long page = 0; page < pagesTotal; page++)
+    {
+        fread(buff, pageSize, 1, file);
+        /* Reading only first channel. */
+        for(unsigned long i = 0; i < pageSize; i += blockAlign) {
+#if DEBUG
+          cout << "Page " << page << " out of " << pagesTotal << ".\t";
+          cout << "At " << i << " out of " << pageSize  << ".\t";
+#endif
 
-    /* Reading only first channel. */
-    for(unsigned long i = 0; i < BlocksTotal; i++) {
-      #if DEBUG
-      cout << i << " out of " << BlocksTotal << ' ';
-      #endif
+          tmpAmplitude = strtoampl(buff + i, depth); //Good buff + i???
+          amplTime.push_back(tmpAmplitude);
 
-      fread(&amplitude, sizeof(T), 1, file);
-      tmpAmplitude = (float)amplitude / maxAmplitude;
-      amplTime.push_back(tmpAmplitude);
-      err = fseek(file, sizeof(T) * (channels - 1), SEEK_CUR);
-
-      #if DEBUG
-      cout << tmpAmplitude << endl;
-      #endif
+#if DEBUG
+          cout << tmpAmplitude << endl;
+#endif
+        }
     }
+    /* Read remaining part of file less then a page*/
+    if(sizeOfFileRemainder != 0)
+        fread(buff, sizeOfFileRemainder, 1, file);
+        for(unsigned long i = 0; i < sizeOfFileRemainder; i += blockAlign) {
+#if DEBUG
+          cout << "At " << i << " out of " << sizeOfFileRemainder  << ".\t";
+#endif
+
+          tmpAmplitude = strtoampl(buff, depth);
+          amplTime.push_back(tmpAmplitude);
+
+          #if DEBUG
+          cout << tmpAmplitude << endl;
+          #endif
+        }
+
+    delete [] buff;
 }
 
 
@@ -238,4 +283,31 @@ void WavFile::dumpVector(vector<float> amplTime)
     {
       cout << *it << '\t';
     }
+}
+
+float WavFile::strtoampl(const char* str, const unsigned short depth)
+{
+    int maxAmplitude = (depth==32? 0x7fffffff :
+                                 depth==24? 0x7fffff :
+                                 depth==16? 0x7fff : 0xff);
+    union {
+       int amplitude;
+       char data[4];
+    } a;
+    a.amplitude = 0;
+    unsigned short steps = depth / sizeof(char) / 8;
+    for (unsigned i = 0; i < steps; i++)
+        a.data[i] = str[steps - i - 1];
+
+    if (a.amplitude > maxAmplitude)
+       a.amplitude -= 2*maxAmplitude;   //simulating setting negative bit
+
+#if DEBUG
+    cout << a.data[0] << '.' <<
+            a.data[1] << '.' <<
+            a.data[2] << '.' <<
+            a.data[3] << ". " << a.amplitude << ' ';
+#endif
+    float famplitude = (float)a.amplitude / maxAmplitude;
+    return famplitude;
 }
