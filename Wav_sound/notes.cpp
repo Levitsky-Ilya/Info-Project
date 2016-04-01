@@ -3,23 +3,28 @@
 #include <thread>
 
 /*
- * Read initial frequances from file to notesFreqList
+ * Read initial frequances from file to FreqList
  */
+float & NotesList::operator [] (int n)
+{
+    return notesList[n];
+}
+
 Notes::Notes()
 {
     ifstream fin("Frequences_for_notes.txt");
-    double freq;
+    float freq;
 
     if (fin.is_open()) {
         while(fin >> freq) {
-            notesFreqList.push_back(freq);
+            FreqList.push_back(freq);
         }
     }
     else {
         cout << "ERROR: no such note file!" << endl;
         exit(-1);
     }
-    if(notesFreqList.size() != NUMBER_OF_NOTES) {
+    if(FreqList.size() != NUMBER_OF_NOTES) {
         cout << "ERROR: note file is damaged" << endl;
         exit(-1);
     }
@@ -30,7 +35,7 @@ Notes::Notes()
 void Notes::generateMidView(const char *fileName)
 {
     WavFile melody(fileName);
-    vector<double> amplTime;
+    vector<float> amplTime;
 
     int channels = melody.getChannels();
     int sampleRate = melody.getRate();
@@ -51,17 +56,17 @@ void Notes::generateMidView(const char *fileName)
 
 //there is a checking that function do something and may be correct:
         for (int i = 41; i < NUMBER_OF_NOTES; i++) {
-            cout << partFirst[1].notesList[i] << " ";
+            cout << partFirst[0].notesList[i] << " ";
         }
         cout << endl << endl;
 
         for (int i = 41; i < NUMBER_OF_NOTES; i++) {
-            cout << partSecond[1].notesList[i] << " ";
+            cout << partSecond[0].notesList[i] << " ";
         }
-        int i = maxNote(partFirst[1]);
-        cout << endl << "first max = " << i << endl;
-        i = maxNote(partSecond[1]);
-        cout << "second max = " << i << endl;
+        int i = maxNote(partFirst[0]);
+        cout << endl << "first max = " << FreqList[i] << endl;
+        i = maxNote(partSecond[0]);
+        cout << "second max = " << FreqList[i] << endl;
 //***********
     }
 
@@ -70,7 +75,7 @@ void Notes::generateMidView(const char *fileName)
 
 void Notes::executeBlock(unsigned int frameSize, int sampleRate,
                          int firstNote, int lastNote, TypeFrame typeFrame,
-                         vector<double> &amplTime)
+                         vector<float> &amplTime)
 {
     NotesList amplNotes;
     amplNotes.numFirstNote = firstNote;
@@ -80,7 +85,7 @@ void Notes::executeBlock(unsigned int frameSize, int sampleRate,
     CFFT fft;
 
     complex inFft[frameSize];
-    double outFft[frameSize];
+    float outFft[frameSize];
     size_t melodySize = amplTime.size();
 
     if (typeFrame == WITH_NULLS) {
@@ -101,6 +106,7 @@ void Notes::executeBlock(unsigned int frameSize, int sampleRate,
             }
         }
 
+        fft.applyWindow(inFft, frameSize);
         fft.fftAlgorithm(inFft, outFft, frameSize);
 
         freqToNote(outFft, frameSize, amplNotes);
@@ -115,22 +121,22 @@ void Notes::executeBlock(unsigned int frameSize, int sampleRate,
     }
 }
 
-void Notes::freqToNote(double * const outFft, int num, NotesList &notes)
+void Notes::freqToNote(float * const outFft, int num, NotesList &notes)
 {
     int outNum = 0;
-    double freq = 0.0;
+    float freq = 0.0;
     // find the first number of frequence that can be compared with first note
 
-    while(freq < notesFreqList[notes.numFirstNote]) {
+    while(freq < FreqList[notes.numFirstNote]) {
         freq += notes.diffFreq;
         outNum++;
     }
-    if (freq > notesFreqList[notes.numFirstNote + 1]) {
+    if (freq > FreqList[notes.numFirstNote + 1]) {
         cout << "Wrong first note: " << notes.numFirstNote << endl;
         exit(-1);
     }
 
-    double deltaUp, deltaDown;
+    float delta, deltaDown;
 
     for (int j = 0; j < NUMBER_OF_NOTES; j++) {
         notes.notesList[j] = -INFINITY; // attention!!!
@@ -138,20 +144,20 @@ void Notes::freqToNote(double * const outFft, int num, NotesList &notes)
 
     int k = notes.numFirstNote;
     for (int j = outNum; j < num && k < notes.numLastNote; j++) {
-        deltaUp = notesFreqList[k+1] - freq;
-        deltaDown = freq - notesFreqList[k];
+        delta = sqrt(FreqList[k+1] / FreqList[k]);
+        deltaDown = freq - FreqList[k];
 
-        if (deltaDown < deltaUp) {
-            if (notes.notesList[k] < outFft[j])
-                notes.notesList[k] = outFft[j];
+        if (deltaDown < delta) {
+            if (notes[k] < outFft[j])
+                notes[k] = outFft[j];
         }
         else {
-            if (notes.notesList[k+1] < outFft[j])
-                notes.notesList[k+1] = outFft[j];
+            if (notes[k+1] < outFft[j])
+                notes[k+1] = outFft[j];
         }
 
         freq += notes.diffFreq;
-        if (freq > notesFreqList[k + 1]) {
+        if (freq > FreqList[k + 1]) {
             k++;
         }
     }

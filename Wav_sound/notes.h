@@ -9,20 +9,24 @@ enum TypeFrame {WITH_NULLS, WITHOUT_NULLS};
 
 struct Note
 {
-    double freq;
+    float freq;
     int nNote;
     int duration;
-    double initTime;
+    float initTime;
 };
 
 
 struct NotesList
 {
-    double notesList[NUMBER_OF_NOTES];
-    double diffFreq;
+public:
+    float notesList[NUMBER_OF_NOTES];
+    float diffFreq;
     int numFirstNote;
     int numLastNote;
+    float & operator [] (int n);
 };
+
+// const float & operator [] (int n) const;
 
 class Notes
 {
@@ -32,14 +36,14 @@ public:
 
     vector<Note> notesOut;
 private:
-    vector<double> notesFreqList; // initial list of notes
+    vector<float> FreqList; // initial list of notes
     vector<NotesList> partFirst;
     vector<NotesList> partSecond;
     int maxNote(NotesList& ampl);
     void executeBlock(unsigned int frameSize, int sampleRate,
                       int firstNote, int lastNote, TypeFrame typeFrame,
-                      vector<double>& amplTime);
-    void freqToNote(double * const outFft, int num, NotesList &amplNotes);
+                      vector<float>& amplTime);
+    void freqToNote(float * const outFft, int num, NotesList &amplNotes);
 };
 
 #endif // NOTES_H
