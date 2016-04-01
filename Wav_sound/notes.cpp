@@ -1,10 +1,7 @@
 #include "notes.h"
-#include <fstream>
+#include "frequencies_for_notes.h"
 #include <thread>
 
-/*
- * Read initial frequances from file to FreqList
- */
 float & NotesList::operator [] (int n)
 {
     return notesList[n];
@@ -12,24 +9,7 @@ float & NotesList::operator [] (int n)
 
 Notes::Notes()
 {
-    ifstream fin("Frequences_for_notes.txt");
-    float freq;
 
-    if (fin.is_open()) {
-        while(fin >> freq) {
-            FreqList.push_back(freq);
-        }
-    }
-    else {
-        cout << "ERROR: no such note file!" << endl;
-        exit(-1);
-    }
-    if(FreqList.size() != NUMBER_OF_NOTES) {
-        cout << "ERROR: note file is damaged" << endl;
-        exit(-1);
-    }
-
-    fin.close();
 }
 
 void Notes::generateMidView(const char *fileName)
@@ -64,9 +44,9 @@ void Notes::generateMidView(const char *fileName)
             cout << partSecond[0].notesList[i] << " ";
         }
         int i = maxNote(partFirst[0]);
-        cout << endl << "first max = " << FreqList[i] << endl;
+        cout << endl << "first max = " << initNotes[i] << endl;
         i = maxNote(partSecond[0]);
-        cout << "second max = " << FreqList[i] << endl;
+        cout << "second max = " << initNotes[i] << endl;
 //***********
     }
 
@@ -127,11 +107,11 @@ void Notes::freqToNote(float * const outFft, int num, NotesList &notes)
     float freq = 0.0;
     // find the first number of frequence that can be compared with first note
 
-    while(freq < FreqList[notes.numFirstNote]) {
+    while(freq < initNotes[notes.numFirstNote]) {
         freq += notes.diffFreq;
         outNum++;
     }
-    if (freq > FreqList[notes.numFirstNote + 1]) {
+    if (freq > initNotes[notes.numFirstNote + 1]) {
         cout << "Wrong first note: " << notes.numFirstNote << endl;
         exit(-1);
     }
@@ -144,8 +124,8 @@ void Notes::freqToNote(float * const outFft, int num, NotesList &notes)
 
     int k = notes.numFirstNote;
     for (int j = outNum; j < num && k < notes.numLastNote; j++) {
-        delta = sqrt(FreqList[k+1] / FreqList[k]);
-        deltaDown = freq - FreqList[k];
+        delta = sqrt(initNotes[k+1] / initNotes[k]);
+        deltaDown = freq - initNotes[k];
 
         if (deltaDown < delta) {
             if (notes[k] < outFft[j])
@@ -157,7 +137,7 @@ void Notes::freqToNote(float * const outFft, int num, NotesList &notes)
         }
 
         freq += notes.diffFreq;
-        if (freq > FreqList[k + 1]) {
+        if (freq > initNotes[k + 1]) {
             k++;
         }
     }

@@ -36,7 +36,6 @@ public:
 
     vector<Note> notesOut;
 private:
-    vector<float> FreqList; // initial list of notes
     vector<NotesList> partFirst;
     vector<NotesList> partSecond;
     int maxNote(NotesList& ampl);
