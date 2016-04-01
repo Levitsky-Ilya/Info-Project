@@ -17,10 +17,6 @@ const complex complex::j(0., 1.);
 
 void complex::print()
 {
-    //cout << "this is" << m_re <<  "+" << m_im << "i";
-   // QTextStream cout(stdout);
    std::cout << "re= " << m_re << " im = " << m_im << "\n"  ;
-   //std::endl;
-
 }
 
