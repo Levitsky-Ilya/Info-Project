@@ -1,133 +1,129 @@
 #include "notes.h"
-#include "frequencies_for_notes.h"
 #include <thread>
 
-float & NotesList::operator [] (int n)
+const int DO[NUMBER_OF_BLOCKS] = {36, 24, 12, 0};
+
+/*float & NotesList::operator [] (int n)
 {
     return notesList[n];
 }
+*/
 
-Notes::Notes()
+Notes::Notes(const char *fileName)
 {
+    for (int i = 0; i < NUMBER_OF_NOTES - 1; i++) {
+        initDiffFreq[i] = initNotes[i+1] - initNotes[i];
+        initDeltaFreq[i] = sqrt(initNotes[i+1] / initNotes[i]);
+    }
 
+    WavFile melody(fileName);
+    melody.getAmplitudeArray(amplTime);
+
+    int sampleRate = melody.getRate();
+    unsigned int frameSize = 1;
+    int firstNote = 0;
+    //int channels = melody.getChannels();
+
+    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+        while (sampleRate / frameSize > initDiffFreq[DO[i]]) {
+            frameSize <<= 1;
+        }
+        frameSize >>= 1;
+
+        blocks[i].frameSize = frameSize;
+        blocks[i].diffFreq = sampleRate / frameSize;
+
+        firstNote = DO[i];
+        while(initDiffFreq[firstNote] < blocks[i].diffFreq)
+            firstNote++;
+
+        blocks[i].firstNote = firstNote;
+    }
+
+    blocks[0].lastNote = NUMBER_OF_NOTES - 1;
+    blocks[1].lastNote = blocks[0].firstNote;
+    blocks[2].lastNote = blocks[1].firstNote;
+    blocks[3].lastNote = blocks[2].firstNote;
 }
 
-void Notes::generateMidView(const char *fileName)
+void Notes::generateMidView(vector<Note> & notesOut)
 {
-    WavFile melody(fileName);
-    vector<float> amplTime;
+    //thread thr1(blocks[0].execute, this, ref(amplTime));
+    //thr1.join();
 
-    int channels = melody.getChannels();
-    int sampleRate = melody.getRate();
-
-    if ((channels == 1)&&(sampleRate == 44100)) {
-        melody.getAmplitudeArray(amplTime);
-
-        //there I try to use threads, but it's only example to compare fft
-        //with and without nulls
-        thread thr1(executeBlock, this, 2048, sampleRate, 41,
-                    NUMBER_OF_NOTES - 1, WITHOUT_NULLS, ref(amplTime));
-        thread thr2(executeBlock, this, 4096, sampleRate, 41,
-                    NUMBER_OF_NOTES - 1, WITH_NULLS, ref(amplTime));
-
-        thr1.join();
-        thr2.join();
-        //***************
+    blocks[0].execute(amplTime, initDeltaFreq);
 
 //there is a checking that function do something and may be correct:
-        for (int i = 41; i < NUMBER_OF_NOTES; i++) {
-            cout << partFirst[0].notesList[i] << " ";
-        }
-        cout << endl << endl;
-
-        for (int i = 41; i < NUMBER_OF_NOTES; i++) {
-            cout << partSecond[0].notesList[i] << " ";
-        }
-        int i = maxNote(partFirst[0]);
-        cout << endl << "first max = " << initNotes[i] << endl;
-        i = maxNote(partSecond[0]);
-        cout << "second max = " << initNotes[i] << endl;
-//***********
+    int prpr = 1;
+    cout << blocks[0].firstNote << " " << initNotes[blocks[0].firstNote] << endl << endl;
+    for (int i = blocks[0].firstNote; i < NUMBER_OF_NOTES; i++) {
+        cout << blocks[0].block[prpr][i] << " ";
     }
+    cout << endl << endl;
+
+    /*for (int i = 41; i < NUMBER_OF_NOTES; i++) {
+        cout << partSecond[0].notesList[i] << " ";
+    }*/
+    int i = maxNote(blocks[0].block[prpr]);
+    cout << endl << "first max = " << initNotes[i] << endl;
+    /*i = maxNote(partSecond[0]);
+    cout << "second max = " << initNotes[i] << endl;*/
+//***********
 
     return;
 }
 
-void Notes::executeBlock(unsigned int frameSize, int sampleRate,
-                         int firstNote, int lastNote, TypeFrame typeFrame,
-                         vector<float> &amplTime)
+void Notes::Block::execute(const vector<float> & amplTime,
+                           const float * const delta)
 {
-    NotesList amplNotes;
-    amplNotes.numFirstNote = firstNote;
-    amplNotes.numLastNote = lastNote;
-    amplNotes.diffFreq = sampleRate/frameSize;
-
+    array<float, NUMBER_OF_NOTES> amplNotes;
     CFFT fft;
 
     complex inFft[frameSize];
     float outFft[frameSize];
     size_t melodySize = amplTime.size();
 
-    if (typeFrame == WITH_NULLS) {
-        frameSize /= 2;
-    }
-
     for (unsigned int i = 0; i < melodySize; i += frameSize) {
 
-        if (typeFrame == WITHOUT_NULLS) {
-            for (unsigned int j = 0; j < frameSize; j++) {
-                inFft[j] = complex(amplTime[i+j], 0.0);
-            }
-        }
-        else {
-            for (unsigned int j = 0; j < frameSize; j++) {
-                inFft[j >> 1] = complex(amplTime[i+(j >> 1)], 0.0);
-                inFft[(j >> 1) + 1] = complex(0.0, 0.0);
-            }
+        for (unsigned int j = 0; j < frameSize; j++) {
+            inFft[j] = complex(amplTime[i+j], 0.0);
         }
 
         fft.applyWindow(inFft, frameSize);
         fft.fftAlgorithm(inFft, outFft, frameSize);
 
-        freqToNote(outFft, frameSize, amplNotes);
+        freqToNote(outFft, delta, amplNotes);
 
-//!!! there are solution only for an example with first block!!!
-        if (typeFrame == WITHOUT_NULLS) {
-            partFirst.push_back(amplNotes);
-        }
-        else {
-            partSecond.push_back(amplNotes);
-        }
+        block.push_back(amplNotes);
     }
 }
 
-void Notes::freqToNote(float * const outFft, int num, NotesList &notes)
+void Notes::Block::freqToNote(const float * const outFft,
+                              const float * const delta,
+                              array<float, NUMBER_OF_NOTES> & notes)
 {
-    int outNum = 0;
+    unsigned int outNum = 0;
     float freq = 0.0;
     // find the first number of frequence that can be compared with first note
 
-    while(freq < initNotes[notes.numFirstNote]) {
-        freq += notes.diffFreq;
+    while(freq < initNotes[firstNote]) {
+        freq += diffFreq;
         outNum++;
     }
-    if (freq > initNotes[notes.numFirstNote + 1]) {
-        cout << "Wrong first note: " << notes.numFirstNote << endl;
+    if (freq > initNotes[firstNote + 1]) {
+        cout << "Wrong first note: " << initNotes[firstNote] << endl;
         exit(-1);
     }
 
-    float delta, deltaDown;
+    float deltaDown;
+    notes.fill(-INFINITY); //there fill!!!
 
-    for (int j = 0; j < NUMBER_OF_NOTES; j++) {
-        notes.notesList[j] = -INFINITY; // attention!!!
-    }
+    int k = firstNote;
+    for (unsigned int j = outNum; (j < frameSize) && (k < lastNote); j++) {
 
-    int k = notes.numFirstNote;
-    for (int j = outNum; j < num && k < notes.numLastNote; j++) {
-        delta = sqrt(initNotes[k+1] / initNotes[k]);
         deltaDown = freq - initNotes[k];
 
-        if (deltaDown < delta) {
+        if (deltaDown < delta[k]) {
             if (notes[k] < outFft[j])
                 notes[k] = outFft[j];
         }
@@ -136,7 +132,7 @@ void Notes::freqToNote(float * const outFft, int num, NotesList &notes)
                 notes[k+1] = outFft[j];
         }
 
-        freq += notes.diffFreq;
+        freq += diffFreq;
         if (freq > initNotes[k + 1]) {
             k++;
         }
@@ -144,11 +140,11 @@ void Notes::freqToNote(float * const outFft, int num, NotesList &notes)
     return;
 }
 
-int Notes::maxNote(NotesList& ampl)
+int Notes::maxNote(array<float, NUMBER_OF_NOTES> &ampl)
 {
     int note = 0;
     for(int i = 0; i < NUMBER_OF_NOTES; i++) {
-        if (ampl.notesList[i] > ampl.notesList[note])
+        if (ampl[i] > ampl[note])
             note = i;
     }
     return note;

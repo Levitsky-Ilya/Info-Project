@@ -1,11 +1,14 @@
 #ifndef NOTES_H
 #define NOTES_H
 
+#include <array>
+
 #include "wav_sound.h"
 #include "../fftAlgorithm/fft.h"
+#include "frequencies_for_notes.h"
 
-const int NUMBER_OF_NOTES = 84; //do I have 84 notes? Really???
-enum TypeFrame {WITH_NULLS, WITHOUT_NULLS};
+const int NUMBER_OF_BLOCKS = 4; // or 3, I'll define later
+
 
 struct Note
 {
@@ -15,34 +18,37 @@ struct Note
     float initTime;
 };
 
-
-struct NotesList
-{
-public:
-    float notesList[NUMBER_OF_NOTES];
-    float diffFreq;
-    int numFirstNote;
-    int numLastNote;
-    float & operator [] (int n);
-};
-
-// const float & operator [] (int n) const;
-
 class Notes
 {
 public:
-    Notes();
-    void generateMidView(const char* fileName);
+    Notes(const char* fileName);
+    void generateMidView(vector<Note> & notesOut);
 
-    vector<Note> notesOut;
 private:
-    vector<NotesList> partFirst;
-    vector<NotesList> partSecond;
-    int maxNote(NotesList& ampl);
-    void executeBlock(unsigned int frameSize, int sampleRate,
-                      int firstNote, int lastNote, TypeFrame typeFrame,
-                      vector<float>& amplTime);
-    void freqToNote(float * const outFft, int num, NotesList &amplNotes);
+    //enum TypeFrame {SIMPLE, WITH_OVERLAP};
+    struct Block
+    {
+        vector<array<float, NUMBER_OF_NOTES>> block;
+        unsigned int frameSize;
+        int firstNote;
+        int lastNote;
+        float diffFreq;
+        //TypeFrame typeFrame;
+
+        void execute(const vector<float> & amplTime,
+                     const float * const delta);
+        void freqToNote(const float * const outFft,
+                        const float * const delta,
+                        array<float, NUMBER_OF_NOTES> & notes);
+    };
+
+    float initDiffFreq[NUMBER_OF_NOTES - 1];
+    float initDeltaFreq[NUMBER_OF_NOTES - 1];
+
+    vector<float> amplTime;
+    Block blocks[NUMBER_OF_BLOCKS];
+
+    int maxNote(array<float, NUMBER_OF_NOTES> & ampl);
 };
 
 #endif // NOTES_H
