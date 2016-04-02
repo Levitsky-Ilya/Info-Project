@@ -176,6 +176,7 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
 
     }
     */
+
 #if TIME
     chrono::time_point<chrono::system_clock> start, end;
     start = chrono::system_clock::now();
@@ -261,14 +262,14 @@ void WavFile::fillVector (vector<float> &amplTime)
           cout << "At " << i << " out of " << sizeOfFileRemainder  << ".\t";
 #endif
 
-          tmpAmplitude = strtoampl(buff, depth);
+          tmpAmplitude = strtoampl(buff + i, depth);
           amplTime.push_back(tmpAmplitude);
 
           #if DEBUG
           cout << tmpAmplitude << endl;
           #endif
         }
-
+    fclose(file);
     delete [] buff;
 }
 
@@ -297,7 +298,7 @@ float WavFile::strtoampl(const char* str, const unsigned short depth)
     a.amplitude = 0;
     unsigned short steps = depth / sizeof(char) / 8;
     for (unsigned i = 0; i < steps; i++)
-        a.data[i] = str[steps - i - 1];
+        a.data[i] = str[i];
 
     if (a.amplitude > maxAmplitude)
        a.amplitude -= 2*maxAmplitude;   //simulating setting negative bit
