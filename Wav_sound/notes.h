@@ -3,7 +3,7 @@
 
 #include <array>
 
-#include "wav_sound.h"
+#include "../wav_sound.h"
 #include "../fftAlgorithm/fft.h"
 #include "frequencies_for_notes.h"
 

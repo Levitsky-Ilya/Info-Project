@@ -14,7 +14,7 @@
 #define DEBUG 0
 #define TIME 0
 
-#include <wav_sound.h>
+#include "wav_sound.h"
 
 #include <iostream>
 #include <fstream>

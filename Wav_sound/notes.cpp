@@ -58,9 +58,10 @@ void Notes::generateMidView(vector<Note> & notesOut)
     }*/
 
 //there is a specific dump, on a first time:
-    int ntime = 0;
+    int ntime = 2;
+    cout << ntime << endl << endl;
     for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
-        blocks[i].dump(ntime);
+        blocks[i].dump(ntime / (2 << i));
     }
 
     int i = maxNote(blocks[0].block[ntime]);
