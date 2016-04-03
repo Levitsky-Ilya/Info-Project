@@ -43,18 +43,26 @@ Notes::Notes(const char *fileName)
 
 void Notes::generateMidView(vector<Note> & notesOut)
 {
-    int ntime = 0;
-    //thread thr1(blocks[0].execute, this, ref(amplTime));
-    //thr1.join();
+    thread thr0(blocks[0].execute, &(blocks[0]), ref(amplTime), ref(initDeltaFreq));
+    thread thr1(blocks[1].execute, &(blocks[1]), ref(amplTime), ref(initDeltaFreq));
+    thread thr2(blocks[2].execute, &(blocks[2]), ref(amplTime), ref(initDeltaFreq));
+    thread thr3(blocks[3].execute, &(blocks[3]), ref(amplTime), ref(initDeltaFreq));
 
-    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+    thr0.join();
+    thr1.join();
+    thr2.join();
+    thr3.join();
+
+    /*for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         blocks[i].execute(amplTime, initDeltaFreq);
-    }
+    }*/
 
-//there is a checking that function do something and may be correct:
+//there is a specific dump, on a first time:
+    int ntime = 0;
     for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         blocks[i].dump(ntime);
     }
+
     int i = maxNote(blocks[0].block[ntime]);
     cout << endl << "first max = " << initNotes[i] << endl;
 //***********
