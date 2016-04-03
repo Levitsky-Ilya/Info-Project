@@ -32,6 +32,7 @@ private:
         unsigned int frameSize;
         int firstNote;
         int lastNote;
+        int outNum;
         float diffFreq;
         //TypeFrame typeFrame;
 
@@ -40,6 +41,7 @@ private:
         void freqToNote(const float * const outFft,
                         const float * const delta,
                         array<float, NUMBER_OF_NOTES> & notes);
+        void dump(int nTime);
     };
 
     float initDiffFreq[NUMBER_OF_NOTES - 1];
