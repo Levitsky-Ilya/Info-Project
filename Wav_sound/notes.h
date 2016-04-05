@@ -50,6 +50,7 @@ private:
     vector<float> amplTime;
     Block blocks[NUMBER_OF_BLOCKS];
 
+    void dump();
     int maxNote(array<float, NUMBER_OF_NOTES> & ampl);
 };
 

@@ -57,17 +57,7 @@ void Notes::generateMidView(vector<Note> & notesOut)
         blocks[i].execute(amplTime, initDeltaFreq);
     }*/
 
-//there is a specific dump, on a first time:
-    int ntime = 2;
-    cout << ntime << endl << endl;
-    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
-        blocks[i].dump(ntime / (2 << i));
-    }
-
-    int i = maxNote(blocks[0].block[ntime]);
-    cout << endl << "first max = " << initNotes[i] << endl;
-//***********
-
+    dump();
     return;
 }
 
@@ -98,12 +88,38 @@ void Notes::Block::execute(const vector<float> & amplTime,
     }
 }
 
+void Notes::dump()
+{
+    //int ntime = blocks[0].block.size() - 1;
+    int ntime = 4;
+    cout << "time = " << ntime << endl << endl;
+
+    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+        blocks[i].dump(ntime / (1 << i));
+    }
+
+    //cout << "first ampl: " << amplTime[0] << endl;
+    int size = amplTime.size() - 1;
+    //cout << "last ampl: " << amplTime[size] << endl << endl;
+
+    for (int i = 0; i < 20; i++)
+        cout << amplTime[i] << " ";
+    cout << endl;
+    for (int i = size; i > size - 20; i--)
+        cout << amplTime[i] << " ";
+    cout << endl;
+
+    int i = maxNote(blocks[0].block[ntime]);
+    cout << endl << "first max: " << i << " " << initNotes[i] << endl;
+}
+
 void Notes::Block::dump(int ntime)
 {
     cout << "first note: " << firstNote << " " << initNotes[firstNote] << endl;
     cout << "last note: " << lastNote << " " << initNotes[lastNote] << endl;
+    cout << "time = " << ntime << endl;
+    cout << "size of block = " << block.size() << endl;
     cout << endl;
-
     for (int i = firstNote; i <= lastNote; i++) {
         //assert(ntime < block.size());
         cout << block[ntime][i] << " ";
