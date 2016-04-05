@@ -17,10 +17,10 @@
 /** WavFile header*/
 #include "wav_sound.h"
 
-/*#include <fstream> <-- curently unused, old segment is commented.
+/*#include <fstream> <- curently unused, old segment is commented.
  * DELETE??
  */
-/*#include <iomanip> <-- curently unused, needed for correct display of duration.
+/*#include <iomanip> <- curently unused, needed for correct display of duration.
  * NEEDED?
  */
 
