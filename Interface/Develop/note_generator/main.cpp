@@ -47,6 +47,22 @@ int main()
 		{466.16, "ais'", 13.080, 13.860}, {493.88,   "h'", 13.860, 14.685},
 	};
 
+	struct NotePause {
+		float pause_dur;
+		string pause_name;
+	};
+
+	list<NotePause> note_pause_list = {
+		{0.0625,       "r16 "}, {0.1250,     "r8 "},
+		{0.1875,       "r8. "}, {0.2500,     "r4 "},
+		{0.3125,    "r4 r16 "}, {0.3750,    "r4. "},
+		{0.4375,   "r4. r16 "}, {0.5000,     "r2 "},
+		{0.5625,    "r2 r16 "}, {0.6250,  "r2 r8 "},
+		{0.6875,    "r2 r8. "}, {0.7500,    "r2. "},
+		{0.8125, "r2 r4 r16 "}, {0.8750, "r2 r4. "},
+		{0.9375, "r2 r4 r8. "}, {1.0000,     "r1 "},
+	};
+
 	struct NoteDur {
 		float note_dur;
 		std::function<string(string)> func;
@@ -83,13 +99,13 @@ int main()
 	note_1.freq = 329.70f;
 	note_1.n = 1;
 	note_1.duration = 0.25f;
-	note_1.init_time = 0;
+	note_1.init_time = 0.1;
 
 	Notes note_2;
 	note_2.freq = 470.05f;
 	note_2.n = 2;
 	note_2.duration = 0.88f;
-	note_2.init_time = 0.5;
+	note_2.init_time = 0.44;
 
 	vector<struct Notes> note_queue;
 	note_queue.push_back(note_1);
@@ -97,11 +113,21 @@ int main()
 
 	ofstream f("E:/Programs/Lilypond/file.ly");
 		f << "{\n";
+		f << "\\override Score.BarLine.stencil = ##f \n";
 
 	for (unsigned int i = 0; i < note_queue.size(); i++)
 	{
 		string name;
 		const float bit = 0.03125;
+
+//Start pause
+
+		for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
+			if (near(it->pause_dur, note_queue[0].init_time, bit, bit)) {
+				f << it->pause_name;
+			}
+		}
+
 //Frequency
 ////////////////////////////////////////
 		for (auto it = note_freq_list.begin(); it != note_freq_list.end(); ++it) {
@@ -121,42 +147,17 @@ int main()
 			}
 		}
 
-		/*if (near(0.0625, note_queue[i].duration, 2*bit, bit)) {
-			f << "16 ";
-		} else if (near(0.125, note_queue[i].duration, bit, bit)) {
-			f << "8 ";
-		} else if (near(0.1875, note_queue[i].duration, bit, bit)) {
-			f << "8. ";
-		} else if (near(0.25, note_queue[i].duration, bit, bit)) {
-			f << "4 ";
-		} else if (near(0.3125, note_queue[i].duration, bit, bit)) {
-			f << "4~ " << name << "16 ";
-		} else if (near(0.375, note_queue[i].duration, bit, bit)) {
-			f << "4. ";
-		} else if (near(0.4375, note_queue[i].duration, bit, bit)) {
-			f << "4~ " << name << "8. ";
-		} else if (near(0.5, note_queue[i].duration, bit, bit)) {
-			f << "2 ";
-		} else if (near(0.5625, note_queue[i].duration, bit, bit)) {
-			f << "2~ " << name << "16 ";
-		} else if (near(0.625, note_queue[i].duration, bit, bit)) {
-			f << "2~ " << name << "8 ";
-		} else if (near(0.6875, note_queue[i].duration, bit, bit)) {
-			f << "2~ " << name << "8. ";
-		} else if (near(0.75, note_queue[i].duration, bit, bit)) {
-			f << "2~ " << name << "4 ";
-		} else if (near(0.8125, note_queue[i].duration, bit, bit)) {
-			f << "2~ " << name << "4~ " << name << "16 ";
-		} else if (near(0.875, note_queue[i].duration, bit, bit)) {
-			f << "2~ " << name << "4. ";
-		} else if (near(0.9375, note_queue[i].duration, bit, bit)) {
-			f << "2~ " << name << "4~ " << name << "8. ";
-		} else if (near(1, note_queue[i].duration, bit, bit)) {
-			f << "1 ";
-		}*/
+
 //Pause
 ////////////////////////////////////////
-		if (near(0.0625, note_queue[i+1].init_time - note_queue[i].duration, 0.005, 0.005)) {
+
+		for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
+			if (near(it->pause_dur, note_queue[i+1].init_time - note_queue[i].duration, bit, bit)) {
+				f << it->pause_name;
+			}
+		}
+
+		/*if (near(0.0625, note_queue[i+1].init_time - note_queue[i].duration, 0.005, 0.005)) {
 			f << "r16 ";
 		} else if (near(0.125, note_queue[i+1].init_time - note_queue[i].duration, 0.005, 0.005)) {
 			f << "r8 ";
@@ -166,7 +167,7 @@ int main()
 			f << "r2 ";
 		} else if (near(1, note_queue[i+1].init_time - note_queue[i].duration, 0.005, 0.005)) {
 			f << "r1 ";
-		}
+		}*/
 
 	}
 	f << "\n";
