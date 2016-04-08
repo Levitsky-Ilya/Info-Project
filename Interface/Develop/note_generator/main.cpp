@@ -47,6 +47,15 @@ int main()
 		{466.16, "ais'", 13.080, 13.860}, {493.88,   "h'", 13.860, 14.685},
 	};
 
+	list<NoteFreq> note_lfreq_list = {
+		{130.81,   "c,",  3.670,  3.890}, {138.59, "cis,",  3.890,  4.120},
+		{146.83,   "d,",  4.120,  4.370}, {155.56, "dis,",  4.370,  4.625},
+		{164.81,   "e,",  4.625,  4.900}, {174.61,   "f,",  4.900,  5.190},
+		{185.00, "fis,",  5.190,  5.500}, {196.00,   "g,",  5.500,  5.825},
+		{207.65, "gis,",  5.825,  6.175}, {220.00,   "a,",  6.175,  6.540},
+		{233.08, "ais,",  6.540,  6.930}, {246.94,   "h,",  6.930,  7.345},
+	}
+
 	struct NotePause {
 		float pause_dur;
 		string pause_name;
@@ -112,8 +121,7 @@ int main()
 	note_queue.push_back(note_2);
 
 	ofstream f("E:/Programs/Lilypond/file.ly");
-		f << "{\n";
-		f << "\\override Score.BarLine.stencil = ##f \n";
+		f << "normal = \\new Staff { \n";
 
 	for (unsigned int i = 0; i < note_queue.size(); i++)
 	{
@@ -171,7 +179,17 @@ int main()
 
 	}
 	f << "\n";
-	f << "}";
+	f << "}\n";
+
+	f << "\n";
+	f << "{\n";
+	f << "\\override Score.BarLine.stencil = ##f \n";
+	f << "\\override Score.BarLine.allow-span-bar = ##f \n";
+	f << "<< \n";
+	f << "\\normal \n";
+	f << ">> \n";
+	f << "} \n";
+
 	f.close();
 
 	return 0;
