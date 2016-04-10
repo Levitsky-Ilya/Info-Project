@@ -1,8 +1,9 @@
 #include "notes.h"
 #include <thread>
 #include <assert.h>
+#include <fstream>
 
-const int NOTE_C[NUMBER_OF_BLOCKS] = {36, 24, 12, 0};
+const int NOTE_C[NUMBER_OF_BLOCKS] = {24, 12, 0};
 
 Notes::Notes(const char *fileName)
 {
@@ -38,7 +39,7 @@ Notes::Notes(const char *fileName)
     blocks[0].lastNote = NUMBER_OF_NOTES - 1;
     blocks[1].lastNote = blocks[0].firstNote;
     blocks[2].lastNote = blocks[1].firstNote;
-    blocks[3].lastNote = blocks[2].firstNote;
+    //blocks[3].lastNote = blocks[2].firstNote;
 }
 
 void Notes::generateMidView(vector<Note> & notesOut)
@@ -46,12 +47,12 @@ void Notes::generateMidView(vector<Note> & notesOut)
     thread thr0(blocks[0].execute, &(blocks[0]), ref(amplTime), ref(initDeltaFreq));
     thread thr1(blocks[1].execute, &(blocks[1]), ref(amplTime), ref(initDeltaFreq));
     thread thr2(blocks[2].execute, &(blocks[2]), ref(amplTime), ref(initDeltaFreq));
-    thread thr3(blocks[3].execute, &(blocks[3]), ref(amplTime), ref(initDeltaFreq));
+    //thread thr3(blocks[3].execute, &(blocks[3]), ref(amplTime), ref(initDeltaFreq));
 
     thr0.join();
     thr1.join();
     thr2.join();
-    thr3.join();
+    //thr3.join();
 
     /*for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         blocks[i].execute(amplTime, initDeltaFreq);
@@ -86,46 +87,6 @@ void Notes::Block::execute(const vector<float> & amplTime,
 
         block.push_back(amplNotes);
     }
-}
-
-void Notes::dump()
-{
-    //int ntime = blocks[0].block.size() - 1;
-    int ntime = 4;
-    cout << "time = " << ntime << endl << endl;
-
-    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
-        blocks[i].dump(ntime / (1 << i));
-    }
-
-    //cout << "first ampl: " << amplTime[0] << endl;
-    int size = amplTime.size() - 1;
-    //cout << "last ampl: " << amplTime[size] << endl << endl;
-
-    for (int i = 0; i < 20; i++)
-        cout << amplTime[i] << " ";
-    cout << endl;
-    for (int i = size; i > size - 20; i--)
-        cout << amplTime[i] << " ";
-    cout << endl;
-
-    int i = maxNote(blocks[0].block[ntime]);
-    cout << endl << "first max: " << i << " " << initNotes[i] << endl;
-}
-
-void Notes::Block::dump(int ntime)
-{
-    cout << "first note: " << firstNote << " " << initNotes[firstNote] << endl;
-    cout << "last note: " << lastNote << " " << initNotes[lastNote] << endl;
-    cout << "time = " << ntime << endl;
-    cout << "size of block = " << block.size() << endl;
-    cout << endl;
-    for (int i = firstNote; i <= lastNote; i++) {
-        //assert(ntime < block.size());
-        cout << block[ntime][i] << " ";
-        //cout.flush();
-    }
-    cout << endl << endl;
 }
 
 void Notes::Block::freqToNote(const float * const outFft,
@@ -165,4 +126,47 @@ int Notes::maxNote(array<float, NUMBER_OF_NOTES> &ampl)
             note = i;
     }
     return note;
+}
+
+void Notes::dump()
+{
+    ofstream fout("dump.txt");
+    int size = blocks[0].block.size();
+    int ntime = 0;
+    for(ntime = 0; ntime < size; ntime++) {
+        fout << "time = " << ntime << endl << endl;
+        for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+            blocks[i].dump(ntime / (1 << i), fout);
+        }
+        int i = maxNote(blocks[0].block[ntime]);
+        fout << endl << "first max: " << i << " " << initNotes[i] << endl;
+    }
+
+    //cout << "first ampl: " << amplTime[0] << endl;
+    //unsigned int size = amplTime.size() - 1;
+    //cout << "last ampl: " << amplTime[size] << endl << endl;
+
+    /*for (int i = 0; i < 20; i++)
+        cout << amplTime[i] << " ";
+    cout << endl << endl;
+    for (unsigned int i = size; i > size - (blocks[0].frameSize); i--)
+        cout << amplTime[i] << " ";
+    cout << endl;*/
+
+    fout.close();
+}
+
+void Notes::Block::dump(int ntime, ostream &fout)
+{
+    fout << "first note: " << firstNote << " " << initNotes[firstNote] << endl;
+    fout << "last note: " << lastNote << " " << initNotes[lastNote] << endl;
+    fout << "time = " << ntime << endl;
+    fout << "size of block = " << block.size() << endl;
+    fout << endl;
+    for (int i = firstNote; i <= lastNote; i++) {
+        //assert(ntime < block.size());
+        fout << block[ntime][i] << " ";
+        //cout.flush();
+    }
+    fout << endl << endl;
 }

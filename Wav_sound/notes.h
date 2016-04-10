@@ -7,14 +7,13 @@
 #include "../fftAlgorithm/fft.h"
 #include "frequencies_for_notes.h"
 
-const int NUMBER_OF_BLOCKS = 4; // or 3, I'll define later
+const int NUMBER_OF_BLOCKS = 3; // or 3, I'll define later
 
 
 struct Note
 {
-    float freq;
     int nNote;
-    int duration;
+    float duration;
     float initTime;
 };
 
@@ -41,7 +40,7 @@ private:
         void freqToNote(const float * const outFft,
                         const float * const delta,
                         array<float, NUMBER_OF_NOTES> & notes);
-        void dump(int nTime);
+        void dump(int nTime, ostream &fout);
     };
 
     float initDiffFreq[NUMBER_OF_NOTES - 1];
