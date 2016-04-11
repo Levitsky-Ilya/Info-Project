@@ -218,9 +218,9 @@ int Notes::minBlock(NoteBlock notes[])
 
     for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         if (notes[i].current == notes[i].size) {
-            /*notes[i].current --;
-            notes[i].noteBlock[notes[i].current].initTime = INFINITY;*/
-            continue;
+            notes[i].current --;
+            notes[i].noteBlock[notes[i].current].initTime = INFINITY;
+            //continue;
         }
         if (notes[i].noteBlock[notes[i].current].initTime <
                 notes[min].noteBlock[notes[min].current].initTime) {
