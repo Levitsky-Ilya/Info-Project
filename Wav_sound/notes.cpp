@@ -180,7 +180,7 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
 {
     NoteBlock notes[NUMBER_OF_BLOCKS];
 
-    /*thread thr0(blocks[0].peaksToNotes, &(blocks[0]), ref(notes[0].noteBlock));
+    thread thr0(blocks[0].peaksToNotes, &(blocks[0]), ref(notes[0].noteBlock));
     thread thr1(blocks[1].peaksToNotes, &(blocks[1]), ref(notes[1].noteBlock));
     thread thr2(blocks[2].peaksToNotes, &(blocks[2]), ref(notes[2].noteBlock));
     //thread thr3(blocks[3].peaksToNotes, &(blocks[3]), ref(notes[3].noteBlock));
@@ -189,10 +189,10 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
     thr1.join();
     thr2.join();
     //thr3.join();
-*/
-    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+
+    /*for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         blocks[i].peaksToNotes(notes[i].noteBlock);
-    }
+    }*/
 
     int outSize = 0;
 
@@ -202,12 +202,12 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
         outSize += notes[i].size;
     }
 
-    //notesOut.reserve(outSize);
+    notesOut.resize(outSize);
 
     for (int i = 0; i < outSize; i++) {
         int a = minBlock(notes);
-        //notesOut[i] = notes[a].noteBlock[notes[a].current];
-        notesOut.push_back(notes[a].noteBlock[notes[a].current]);
+        notesOut[i] = notes[a].noteBlock[notes[a].current];
+        //notesOut.push_back(notes[a].noteBlock[notes[a].current]);
         notes[a].current++;
     }
 }
@@ -227,8 +227,6 @@ int Notes::minBlock(NoteBlock notes[])
             min = i;
         }
     }
-
-    //notes[min].current++;
 
     return min;
 }
