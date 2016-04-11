@@ -42,7 +42,7 @@ Notes::Notes(const char *fileName)
     //blocks[3].lastNote = blocks[2].firstNote;
 }
 
-void Notes::generateMidView(vector<Note> & notesOut)
+void Notes::generateMidView(vector<Note>& notesOut)
 {
     thread thr0(blocks[0].execute, &(blocks[0]), ref(amplTime), ref(initDeltaFreq));
     thread thr1(blocks[1].execute, &(blocks[1]), ref(amplTime), ref(initDeltaFreq));
@@ -58,7 +58,16 @@ void Notes::generateMidView(vector<Note> & notesOut)
         blocks[i].execute(amplTime, initDeltaFreq);
     }*/
 
-    dump();
+/****************************/
+    ofstream fout("dump.txt");
+    dump(fout);
+    fout.close();
+/***************************/
+
+    keepOnlyPeaks();
+
+    notesFromPeaks(notesOut);
+
     return;
 }
 
@@ -118,7 +127,139 @@ void Notes::Block::freqToNote(const float * const outFft,
     return;
 }
 
-int Notes::maxNote(array<float, NUMBER_OF_NOTES> &ampl)
+void Notes::keepOnlyPeaks()
+{
+    int size = blocks[0].block.size();
+    for (int i = 0; i < size; i++) {
+
+        complementBlocks(i);
+
+        //after this cycle first notes of elder blocks are peaks:
+        for (int j = 0; j < NUMBER_OF_BLOCKS; j++) {
+            blocks[j].keepOnlyPeaks(i >> j); // bad!!!
+        }
+        //because of it we need this function:
+        checkPeaks(i);
+    }
+}
+
+void Notes::complementBlocks(int nTime)
+{
+    for (int i = 0; i < NUMBER_OF_BLOCKS - 1; i++) {
+        if (blocks[i].block[nTime >> i][blocks[i].firstNote] <
+                blocks[i + 1].block[nTime >> (i+1)][blocks[i + 1].lastNote]) {
+            blocks[i].block[nTime >> i][blocks[i].firstNote] =
+                    blocks[i + 1].block[nTime >> (i+1)][blocks[i + 1].lastNote];
+        }
+    }
+}
+
+void Notes::checkPeaks(int nTime)
+{
+    for (int i = 1; i < NUMBER_OF_BLOCKS; i++) {
+        if (blocks[i - 1].block[nTime >> (i - 1)][blocks[i - 1].firstNote + 1] >
+                blocks[i].block[nTime >> i][blocks[i].lastNote]) {
+
+            blocks[i].block[nTime >> i][blocks[i].lastNote] = -INFINITY;
+        }
+    }
+    complementBlocks(nTime);
+}
+
+void Notes::Block::keepOnlyPeaks(int nTime)
+{
+    for (int i = lastNote; i > firstNote; i--) {
+        if (block[nTime][i] <= PEAK_MINIMUM ||
+                block[nTime][i] < block[nTime][i - 1]) {
+            block[nTime][i] = -INFINITY; // there is no 'seconds' in melody!!!
+        }
+    }
+}
+
+void Notes::notesFromPeaks(vector<Note>& notesOut)
+{
+    NoteBlock notes[NUMBER_OF_BLOCKS];
+
+    /*thread thr0(blocks[0].peaksToNotes, &(blocks[0]), ref(notes[0].noteBlock));
+    thread thr1(blocks[1].peaksToNotes, &(blocks[1]), ref(notes[1].noteBlock));
+    thread thr2(blocks[2].peaksToNotes, &(blocks[2]), ref(notes[2].noteBlock));
+    //thread thr3(blocks[3].peaksToNotes, &(blocks[3]), ref(notes[3].noteBlock));
+
+    thr0.join();
+    thr1.join();
+    thr2.join();
+    //thr3.join();
+*/
+    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+        blocks[i].peaksToNotes(notes[i].noteBlock);
+    }
+
+    int outSize = 0;
+
+    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+        notes[i].current = 0;
+        notes[i].size = notes[i].noteBlock.size();
+        outSize += notes[i].size;
+    }
+
+    //notesOut.reserve(outSize);
+
+    for (int i = 0; i < outSize; i++) {
+        int a = minBlock(notes);
+        //notesOut[i] = notes[a].noteBlock[notes[a].current];
+        notesOut.push_back(notes[a].noteBlock[notes[a].current]);
+        notes[a].current++;
+    }
+}
+
+int Notes::minBlock(NoteBlock notes[])
+{
+    int min = 0;
+
+    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+        if (notes[i].current == notes[i].size) {
+            /*notes[i].current --;
+            notes[i].noteBlock[notes[i].current].initTime = INFINITY;*/
+            continue;
+        }
+        if (notes[i].noteBlock[notes[i].current].initTime <
+                notes[min].noteBlock[notes[min].current].initTime) {
+            min = i;
+        }
+    }
+
+    //notes[min].current++;
+
+    return min;
+}
+
+
+void Notes::Block::peaksToNotes(vector<Note>& notes)
+{
+    int size = block.size();
+    for (int nTime = 0; nTime < size; nTime++)
+        for (int i = lastNote; i > firstNote; i--)
+            if (block[nTime][i] > -INFINITY) {
+                Note note;
+
+                note.nNote = i;
+                note.initTime = nTime / diffFreq; // there check types!!! (later)
+
+                int dur = 1;
+                while (nTime + dur < size &&
+                       block[nTime + dur][i] > -INFINITY) {
+
+                    block[nTime + dur][i] = -INFINITY;
+                    dur++;
+                }
+                note.duration = dur / diffFreq; // attettion to types too
+
+                notes.push_back(note);
+            }
+
+}
+
+/*int Notes::maxNote(array<float, NUMBER_OF_NOTES> &ampl)
 {
     int note = 0;
     for(int i = 0; i < NUMBER_OF_NOTES; i++) {
@@ -127,19 +268,20 @@ int Notes::maxNote(array<float, NUMBER_OF_NOTES> &ampl)
     }
     return note;
 }
+*/
 
-void Notes::dump()
+void Notes::dump(ostream &fout)
 {
-    ofstream fout("dump.txt");
+    fout << "***" << " Notes Dump " << "***" << endl;
     int size = blocks[0].block.size();
     int ntime = 0;
     for(ntime = 0; ntime < size; ntime++) {
         fout << "time = " << ntime << endl << endl;
         for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
-            blocks[i].dump(ntime / (1 << i), fout);
+            blocks[i].dump(ntime >> i, fout);
         }
-        int i = maxNote(blocks[0].block[ntime]);
-        fout << endl << "first max: " << i << " " << initNotes[i] << endl;
+        //int i = maxNote(blocks[0].block[ntime]);
+        //fout << endl << "first max: " << i << " " << initNotes[i] << endl;
     }
 
     //cout << "first ampl: " << amplTime[0] << endl;
@@ -153,7 +295,8 @@ void Notes::dump()
         cout << amplTime[i] << " ";
     cout << endl;*/
 
-    fout.close();
+    fout << "**********" << endl;
+    fout << "**********" << endl;
 }
 
 void Notes::Block::dump(int ntime, ostream &fout)
