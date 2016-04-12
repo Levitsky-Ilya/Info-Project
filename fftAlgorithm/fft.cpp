@@ -46,10 +46,28 @@ bool CFFT::fftAlgorithm(complex *const Input, float *const Output, const unsigne
 
 }
 
- void CFFT::applyWindow(complex *Data, unsigned int N)
+ float CFFT::Gausse(unsigned int i, unsigned int N)
+{
+     float b = 0;
+     float a = (N - 1)/2;
+     float t = (i - a)/(a/2);
+     t = t*t;
+     b = exp(-t/2);
+     return b;
+
+}
+
+ void CFFT::applyWindowH(complex *Data, unsigned int N)
  {
      for (unsigned int i = 0; i < N; i++){
          Data[i]*=Hamming(i, N);
+         }
+ }
+
+ void CFFT::applyWindowG(complex *Data, unsigned int N)
+ {
+     for (unsigned int i = 0; i < N; i++){
+         Data[i]*=Gausse(i, N);
          }
  }
 

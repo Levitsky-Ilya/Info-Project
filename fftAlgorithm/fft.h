@@ -20,7 +20,8 @@ public:
     //     Output - transform result (amplitudes)
 	//     N      - length of both input data and result
      bool fftAlgorithm(complex *const Input, float *const Output, const unsigned int N);
-     void applyWindow(complex *const Data, const unsigned int N);
+     void applyWindowH(complex *const Data, const unsigned int N);
+     void applyWindowG(complex *const Data, const unsigned int N);
 
 
 protected:
@@ -31,6 +32,8 @@ protected:
     //  Calculating amplitude
     void countAmplitude(complex *const Input, float *const Output, const unsigned int N);
     float Hamming(unsigned int i, unsigned int N);
+    float Gausse(unsigned int i, unsigned int N);
+
 
 };
 
