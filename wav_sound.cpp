@@ -91,7 +91,6 @@ WavFile::WavFile (const char* fileName)
       exit(EXIT_FAILURE);
     }
     if(strnicmp(header.subchunk1Id, "fmt ", sizeof(header.subchunk1Id)) != 0) {
-      cout << sizeof(header.subchunk1Id) << endl;
       cout << "Couldn't find fmt subchunk, found:"
               " (" << header.subchunk1Id << ")" << endl;
       system("pause");
