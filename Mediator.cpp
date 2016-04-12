@@ -64,7 +64,8 @@ struct WAVHEADER
     // Wav data are following.
 };
 
-int main(int argc, char* argv[])
+
+int mtain(int argc, char* argv[])
 {
     if (argc != 2) {
         cout << "Wrong amount of arguments. Must be 1 - path to file" << endl;
@@ -102,25 +103,22 @@ int main(int argc, char* argv[])
     cout << "Channels:" << header.numChannels << endl;
     cout << "Bits per sample:" << header.bitsPerSample << endl;
 
-    // Calculating duration of playing in seconds
+    /* Calculating duration of playing in min:sec. */
     float DurationSeconds = 1.0f * header.subchunk2Size
                              /(header.bitsPerSample / 8)
                              / header.numChannels / header.sampleRate;
     int DurationMinutes = (int)floor(DurationSeconds) / 60;
     DurationSeconds = DurationSeconds - (DurationMinutes * 60);
 
+    /* Dispalying calculated duration. */
     cout << "Duration: ";
-
     cout.width(2);
     cout.fill('0');
-
     cout << DurationMinutes  << ":";
-
     cout.precision(4);
     cout.width(3);
     cout.fill('0');
     //!!! INCORRECT OUT WHEN TIME < 10sec.
-
     cout << DurationSeconds << endl;
 
   //  printf_s("Duration: %02d:%02.f\n", iDurationMinutes, fDurationSeconds);

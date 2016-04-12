@@ -11,20 +11,28 @@
  * Copyright 2016
  **/
 
-#define DEBUG 0
-#define TIME 0
+#define DEBUG 0     //Set to 1 to display info while scanning the file
+#define TIME 0      //Set to 1 to measure time spent on scanning
 
+/** WavFile header*/
 #include "wav_sound.h"
 
-#include <iostream>
-#include <fstream>
-#include <iomanip>
-#include <cstring>
+/*#include <fstream> <- curently unused, old segment is commented.
+ * DELETE??
+ */
+/*#include <iomanip> <- curently unused, needed for correct display of duration.
+ * NEEDED?
+ */
+
+#include <iostream>     //cout, endl
+/**
+ * When TIME == 1, time spent on reading the file and filling the vector
+ * is measured.
+ */
 #include <chrono>
 
-#include <math.h>
-#include <assert.h>
-#include <windows.h>
+#include <math.h>       //ceil, floor.
+#include <windows.h>    //included for mapping. Not used yet
 
 using namespace std;
 
@@ -36,9 +44,11 @@ const int THREE_QUART_PAGE_SIZE = 3072;
 //Try to use mapping!!
 //CreateFileMapping(file, NULL, PAGE_READONLY, 0, subchunk2Size, NULL)
 
+/** Constructor **/
 WavFile::WavFile (const char* fileName)
 {
     errno_t err;
+
     fileName_ = new char[strlen(fileName) + 1];
     err = strcpy_s(fileName_, strlen(fileName) + 1, fileName);
     if (err)
@@ -104,6 +114,7 @@ WavFile::WavFile (const char* fileName)
     fclose(file);
 }
 
+/** Destructor **/
 WavFile::~WavFile ()
 {
     delete fileName_;
@@ -126,7 +137,7 @@ unsigned short WavFile::getbitsPerSample()
 
 /** This version of getAmplitudeArray(..) is single threaded.
  *  It's out is vector of one channel's amlitudes.
- *  Reading from directly from file?, because sys/mmap.h is unavailible!!!
+ *  fread(..) from file to big buffer, from buffer get amplitudes.
  */
 void WavFile::getAmplitudeArray (vector<float> &amplTime)
 {
@@ -201,7 +212,13 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
 #endif
 }
 
-
+/** Input: empty vector
+ *  Algorithm: Creates buffer sized about one page.
+ *             Divides file into pages.
+ *             Reads from buffer and fills vector
+ *             with amplitudes calculated by strtoampl(..).
+ *  Output: given vector is filled with amplitudes.
+ */
 void WavFile::fillVector (vector<float> &amplTime)
 {
     errno_t err;
@@ -238,54 +255,68 @@ void WavFile::fillVector (vector<float> &amplTime)
     float tmpAmplitude;
     for(unsigned long page = 0; page < pagesTotal; page++)
     {
-        fread(buff, pageSize, 1, file);
-        /* Reading only first channel. */
-        for(unsigned long i = 0; i < pageSize; i += blockAlign) {
+      fread(buff, pageSize, 1, file);
+      /* Reading only first channel. */
+      for(unsigned long i = 0; i < pageSize; i += blockAlign) {
 #if DEBUG
-          cout << "Page " << page << " out of " << pagesTotal << ".\t";
-          cout << "At " << i << " out of " << pageSize  << ".\t";
+        cout << "Page " << page << " out of " << pagesTotal << ".\t";
+        cout << "At " << i << " out of " << pageSize  << ".\t";
 #endif
 
-          tmpAmplitude = strtoampl(buff + i, depth); //Good buff + i???
-          amplTime.push_back(tmpAmplitude);
+        tmpAmplitude = strtoampl(buff + i, depth); //Good buff + i???
+        amplTime.push_back(tmpAmplitude);
 
 #if DEBUG
-          cout << tmpAmplitude << endl;
+        cout << tmpAmplitude << endl;
 #endif
-        }
+      }
     }
     /* Read remaining part of file less then a page*/
     if(sizeOfFileRemainder != 0)
-        fread(buff, sizeOfFileRemainder, 1, file);
-        for(unsigned long i = 0; i < sizeOfFileRemainder; i += blockAlign) {
+      fread(buff, sizeOfFileRemainder, 1, file);
+      for(unsigned long i = 0; i < sizeOfFileRemainder; i += blockAlign) {
 #if DEBUG
-          cout << "At " << i << " out of " << sizeOfFileRemainder  << ".\t";
+        cout << "At " << i << " out of " << sizeOfFileRemainder  << ".\t";
 #endif
 
-          tmpAmplitude = strtoampl(buff + i, depth);
-          amplTime.push_back(tmpAmplitude);
+        tmpAmplitude = strtoampl(buff + i, depth);
+        amplTime.push_back(tmpAmplitude);
 
-          #if DEBUG
-          cout << tmpAmplitude << endl;
-          #endif
-        }
+#if DEBUG
+        cout << tmpAmplitude << endl;
+#endif
+      }
     fclose(file);
     delete [] buff;
 }
 
-
+/** Additional method to print content of vector*/
 void WavFile::dumpVector(vector<float> amplTime)
 {
-    cout << amplTime.size() << endl;
+    cout << "Elemets in vector: " << amplTime.size() << endl;
+    cout << "Input No to display this element from vector." << endl;
+    cout << "Enter negative No to exit." << endl;
     system("pause");
+    /*
     for (vector<float>::iterator it = amplTime.begin();
          it != amplTime.end();
          it++)
     {
       cout << *it << '\t';
     }
+    */
+    long i;
+    cin >> i;
+    while (i >= 0) {
+        cout << amplTime[i] << endl;
+        cin >> i;
+    }
 }
 
+/** Input: str - pointer to first element of buffer to be read,
+ *         depth - depth of sound.
+ *  Output: Amplitude in range [-1; 1].
+ */
 float WavFile::strtoampl(const char* str, const unsigned short depth)
 {
     int maxAmplitude = (depth==32? 0x7fffffff :
