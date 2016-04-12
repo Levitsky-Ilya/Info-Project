@@ -143,6 +143,29 @@ void Notes::keepOnlyPeaks()
     }
 }
 
+void Notes::Block::keepOnlyPeaks(int nTime)
+{
+    if (block[nTime][lastNote] <= PEAK_MINIMUM ||
+            block[nTime][lastNote] < block[nTime][lastNote - 1]) {
+        block[nTime][lastNote] = -INFINITY;
+    }
+
+    for (int i = lastNote - 1; i > firstNote; i--) {
+        int j = i;
+        while (block[nTime][j] < block[nTime][j + 1] && j > firstNote) {
+            j--;
+        }
+        while (i > j) {
+            block[nTime][i] = -INFINITY;
+            i--;
+        }
+        if (block[nTime][i] <= PEAK_MINIMUM ||
+                block[nTime][i] < block[nTime][i - 1]) {
+            block[nTime][i] = -INFINITY; // there is no 'seconds' in melody!!!
+        }
+    }
+}
+
 void Notes::complementBlocks(int nTime)
 {
     for (int i = 0; i < NUMBER_OF_BLOCKS - 1; i++) {
@@ -164,16 +187,6 @@ void Notes::checkPeaks(int nTime)
         }
         blocks[i - 1].block[nTime >> (i-1)][blocks[i - 1].firstNote] =
                 blocks[i].block[nTime >> i][blocks[i].lastNote];
-    }
-}
-
-void Notes::Block::keepOnlyPeaks(int nTime)
-{
-    for (int i = lastNote; i > firstNote; i--) {
-        if (block[nTime][i] <= PEAK_MINIMUM ||
-                block[nTime][i] < block[nTime][i - 1]) {
-            block[nTime][i] = -INFINITY; // there is no 'seconds' in melody!!!
-        }
     }
 }
 
@@ -221,7 +234,6 @@ int Notes::minBlock(NoteBlock notes[])
         if (notes[i].current == notes[i].size) {
             notes[i].current --;
             notes[i].noteBlock[notes[i].current].initTime = INFINITY;
-            //continue;
         }
         if (notes[i].noteBlock[notes[i].current].initTime <
                 notes[min].noteBlock[notes[min].current].initTime) {
@@ -242,8 +254,7 @@ void Notes::Block::peaksToNotes(vector<Note>& notes)
                 Note note;
 
                 note.nNote = i;
-                note.initTime = nTime / diffFreq; // there check types!!! (later)
-
+                note.initTime = nTime / diffFreq;
                 int dur = 1;
                 while (nTime + dur < size &&
                        block[nTime + dur][i] > -INFINITY) {
@@ -251,8 +262,7 @@ void Notes::Block::peaksToNotes(vector<Note>& notes)
                     block[nTime + dur][i] = -INFINITY;
                     dur++;
                 }
-                note.duration = dur / diffFreq; // attettion to types too
-
+                note.duration = dur / diffFreq;
                 notes.push_back(note);
             }
 
