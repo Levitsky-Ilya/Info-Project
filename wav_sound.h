@@ -1,4 +1,4 @@
-/**
+﻿/**
  * wav_sound.cpp
  *
  * Description: WavFile class header.
