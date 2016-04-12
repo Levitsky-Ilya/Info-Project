@@ -89,7 +89,7 @@ void Notes::Block::execute(const vector<float> & amplTime,
             inFft[j] = complex(amplTime[i+j], 0.0);
         }
 
-        fft.applyWindow(inFft, frameSize);
+        fft.applyWindowG(inFft, frameSize);
         fft.fftAlgorithm(inFft, outFft, frameSize);
 
         freqToNote(outFft, delta, amplNotes);
