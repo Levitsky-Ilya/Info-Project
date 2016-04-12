@@ -91,7 +91,6 @@ WavFile::WavFile (const char* fileName)
       exit(EXIT_FAILURE);
     }
     if(strnicmp(header.subchunk1Id, "fmt ", sizeof(header.subchunk1Id)) != 0) {
-      cout << sizeof(header.subchunk1Id) << endl;
       cout << "Couldn't find fmt subchunk, found:"
               " (" << header.subchunk1Id << ")" << endl;
       system("pause");
@@ -255,37 +254,37 @@ void WavFile::fillVector (vector<float> &amplTime)
     float tmpAmplitude;
     for(unsigned long page = 0; page < pagesTotal; page++)
     {
-        fread(buff, pageSize, 1, file);
-        /* Reading only first channel. */
-        for(unsigned long i = 0; i < pageSize; i += blockAlign) {
+      fread(buff, pageSize, 1, file);
+      /* Reading only first channel. */
+      for(unsigned long i = 0; i < pageSize; i += blockAlign) {
 #if DEBUG
-          cout << "Page " << page << " out of " << pagesTotal << ".\t";
-          cout << "At " << i << " out of " << pageSize  << ".\t";
+        cout << "Page " << page << " out of " << pagesTotal << ".\t";
+        cout << "At " << i << " out of " << pageSize  << ".\t";
 #endif
 
-          tmpAmplitude = strtoampl(buff + i, depth); //Good buff + i???
-          amplTime.push_back(tmpAmplitude);
+        tmpAmplitude = strtoampl(buff + i, depth); //Good buff + i???
+        amplTime.push_back(tmpAmplitude);
 
 #if DEBUG
-          cout << tmpAmplitude << endl;
+        cout << tmpAmplitude << endl;
 #endif
-        }
+      }
     }
     /* Read remaining part of file less then a page*/
     if(sizeOfFileRemainder != 0)
-        fread(buff, sizeOfFileRemainder, 1, file);
-        for(unsigned long i = 0; i < sizeOfFileRemainder; i += blockAlign) {
+      fread(buff, sizeOfFileRemainder, 1, file);
+      for(unsigned long i = 0; i < sizeOfFileRemainder; i += blockAlign) {
 #if DEBUG
-          cout << "At " << i << " out of " << sizeOfFileRemainder  << ".\t";
+        cout << "At " << i << " out of " << sizeOfFileRemainder  << ".\t";
 #endif
 
-          tmpAmplitude = strtoampl(buff + i, depth);
-          amplTime.push_back(tmpAmplitude);
+        tmpAmplitude = strtoampl(buff + i, depth);
+        amplTime.push_back(tmpAmplitude);
 
-          #if DEBUG
-          cout << tmpAmplitude << endl;
-          #endif
-        }
+#if DEBUG
+        cout << tmpAmplitude << endl;
+#endif
+      }
     fclose(file);
     delete [] buff;
 }
@@ -294,13 +293,22 @@ void WavFile::fillVector (vector<float> &amplTime)
 void WavFile::dumpVector(vector<float> amplTime)
 {
     cout << "Elemets in vector: " << amplTime.size() << endl;
-    cout << "Press any button to display all content" << endl;
+    cout << "Input No to display this element from vector." << endl;
+    cout << "Enter negative No to exit." << endl;
     system("pause");
+    /*
     for (vector<float>::iterator it = amplTime.begin();
          it != amplTime.end();
          it++)
     {
       cout << *it << '\t';
+    }
+    */
+    long i;
+    cin >> i;
+    while (i >= 0) {
+        cout << amplTime[i] << endl;
+        cin >> i;
     }
 }
 
