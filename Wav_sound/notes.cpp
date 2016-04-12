@@ -162,8 +162,9 @@ void Notes::checkPeaks(int nTime)
 
             blocks[i].block[nTime >> i][blocks[i].lastNote] = -INFINITY;
         }
+        blocks[i - 1].block[nTime >> (i-1)][blocks[i - 1].firstNote] =
+                blocks[i].block[nTime >> i][blocks[i].lastNote];
     }
-    complementBlocks(nTime);
 }
 
 void Notes::Block::keepOnlyPeaks(int nTime)
@@ -301,6 +302,7 @@ void Notes::Block::dump(int ntime, ostream &fout)
 {
     fout << "first note: " << firstNote << " " << initNotes[firstNote] << endl;
     fout << "last note: " << lastNote << " " << initNotes[lastNote] << endl;
+    fout << "frame size = " << frameSize << endl;
     fout << "time = " << ntime << endl;
     fout << "size of block = " << block.size() << endl;
     fout << endl;
