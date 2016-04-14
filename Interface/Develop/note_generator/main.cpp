@@ -39,13 +39,44 @@ vector<struct Notes> breaker(vector<struct Notes> & queue) {
 	list<struct Notes> note_l;
 	struct Notes add_note;
 
+	list<float> note_timing;
+	for (size_t i = 0; i < queue.size(); i++ ) {
+		note_timing.push_back(queue[i].init_time);
+		note_timing.push_back(queue[i].init_time + queue[i].duration);
+	}
+	note_timing.unique();
+	note_timing.sort();
+
 	while(!queue.empty()) {
 		note_l.push_front(queue.back());
 		queue.pop_back();
 	}
 
+	for (auto it1 = note_l.begin(); it1 != note_l.end(); ++it1 ) {
+		for (auto it2 = note_timing.begin(); it2 != note_timing.end(); ++it2){
+			if ((it1->init_time < *it2)&&((it1->init_time + it1->duration) > *it2)) {
+				add_note.duration = it1->init_time + it1->duration - *it2;
+				add_note.init_time = *it2;
+				add_note.freq = it1->freq;
+
+				it1->duration = *it2 - it1->init_time;
+
+				note_l.insert(it1, add_note);
+			}
+		}
+	}
+
+	while (!note_l.empty()) {
+		queue.push_back(note_l.front());
+		note_l.pop_back();
+	}
+
+	sort(queue.begin(), queue.end());
+
+	return queue;
+
+#if 0
 	for (auto it = note_l.begin(); it != note_l.end(); ) {
-		list<struct Notes> temp;
 		auto k = (++it)--;
 		while (it->init_time == k->init_time) {
 			if (k->duration == it->duration)
@@ -78,6 +109,7 @@ vector<struct Notes> breaker(vector<struct Notes> & queue) {
 	}
 
 	return queue;
+#endif // 0
 }
 
 //!!!!!!!!!!!!!
