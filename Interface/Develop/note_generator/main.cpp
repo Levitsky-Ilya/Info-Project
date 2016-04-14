@@ -4,6 +4,8 @@
 #include <string>
 #include <list>
 #include <functional>
+#include <algorithm>
+#include <notes.h>
 
 using namespace std;
 
@@ -26,6 +28,67 @@ string writer(string part1, string part2, string part3, string wr_name)
 	}
 	return part1 + wr_name + part2 + wr_name + part3;
 }
+
+bool dur_comp(const Notes & note1, const Notes & note2)
+{
+	return (note1.duration < note2.duration);
+}
+
+vector<struct Notes> breaker(vector<struct Notes> & queue) {
+
+	list<struct Notes> note_l;
+	struct Notes add_note;
+
+	while(!queue.empty()) {
+		note_l.push_front(queue.back());
+		queue.pop_back();
+	}
+
+	for (auto it = note_l.begin(); it != note_l.end(); ) {
+		list<struct Notes> temp;
+		auto k = (++it)--;
+		while (it->init_time == k->init_time) {
+			if (k->duration == it->duration)
+				continue;
+			add_note.duration = k->duration - it->duration;
+			add_note.init_time = it->init_time + it->duration;
+			add_note.freq = k->freq;
+
+			k->duration = it->duration;
+
+			temp.push_back(add_note);
+			k++;
+		}
+		k--;
+		auto x = k;
+		while (add_note.init_time < x->init_time) {
+			x++;
+		}
+		note_l.splice(x,std::move(temp));
+		it = (++k)--;
+
+		x++;
+		auto y = x;
+		while (x->init_time == y->init_time) ++y;
+		note_l.sort();
+	}
+	while (!note_l.empty()) {
+		queue.push_back(note_l.front());
+		note_l.pop_back();
+	}
+
+	return queue;
+}
+
+//!!!!!!!!!!!!!
+/*string chord(const vector<struct Notes> & queue, int note_num) {
+
+	if (queue[note_num].init_time != queue[note_num + 1].init_time) {
+
+	} else {
+		chord(queue,note_num);
+	}
+}*/
 
 int main()
 {
@@ -94,13 +157,6 @@ int main()
 		{1.0000, std::bind(writer, "1 ",  "",    "",    _1)},
 	};
 
-	struct Notes
-	{
-		float freq;
-		int n;
-		float duration;
-		float init_time;
-	};
 
 	Notes note_1;
 	note_1.freq = 261.63f;
@@ -126,12 +182,15 @@ int main()
 	vector<struct Notes> note_l_queue;
 	note_l_queue.push_back(note_3);
 
+	breaker(note_n_queue);
+
 	ofstream f("E:/Programs/Lilypond/file.ly");
 		f << "normal = \\new Staff { \n";
 
 	for (unsigned int i = 0; i < note_n_queue.size(); i++)
 	{
 		string name;
+		int comb_num;
 		const float bit = 0.03125;
 
 		if (note_n_queue[i].freq >= 261.63) {
@@ -141,6 +200,24 @@ int main()
 				if (near(it->pause_dur, note_n_queue[0].init_time, bit, bit)) {
 					f << it->pause_name;
 				}
+			}
+
+
+			if (note_n_queue[i].init_time != note_n_queue[i+1].init_time) {
+				for (auto it = note_freq_list.begin(); it != note_freq_list.end(); ++it) {
+					if (it->note_freq == note_n_queue[i].freq) {
+						f << it->note_name;
+						name = it->note_name;
+					}
+				}
+
+				for (auto it = note_dur_list.begin(); it != note_dur_list.end(); ++it) {
+					if (near(it->note_dur, note_n_queue[i].duration, bit, bit)) {
+						f << it->func(name);
+					}
+				}
+			} else {
+				//f << chord(note_n_queue, i);
 			}
 
 //Frequency
@@ -165,7 +242,7 @@ int main()
 ////////////////////////////////////////
 
 			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-				if (near(it->pause_dur, note_n_queue[i+1].init_time - note_n_queue[i].duration, bit, bit)) {
+				if (near(it->pause_dur, note_n_queue[comb_num].init_time - note_n_queue[i].duration, bit, bit)) {
 					f << it->pause_name;
 				}
 			}
