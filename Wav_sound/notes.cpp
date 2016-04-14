@@ -74,8 +74,8 @@ void Notes::generateMidView(vector<Note>& notesOut)
 void Notes::Block::execute(const vector<float> & amplTime,
                            const float * const delta)
 {
-    array<float, NUMBER_OF_NOTES> amplNotes;
-    amplNotes.fill(-INFINITY);
+    AmplNotes amplNotes;
+    amplNotes.amplNotes.fill(-INFINITY);
 
     CFFT fft;
 
@@ -100,13 +100,18 @@ void Notes::Block::execute(const vector<float> & amplTime,
 
 void Notes::Block::freqToNote(const float * const outFft,
                               const float * const delta,
-                              array<float, NUMBER_OF_NOTES> & notes)
+                              AmplNotes & notes)
 {
     float freq = outNum * diffFreq;
     float deltaDown = 0.0;
 
     int k = firstNote;
+    float max = -INFINITY;
     for (unsigned int j = outNum; (j < frameSize) && (k < lastNote); j++) {
+
+        if(max < outFft[j]) {
+            max = outFft[j];
+        }
 
         deltaDown = freq - initNotes[k];
 
@@ -124,6 +129,8 @@ void Notes::Block::freqToNote(const float * const outFft,
             k++;
         }
     }
+    notes.maxAmpl = max;
+
     return;
 }
 
@@ -146,6 +153,7 @@ void Notes::keepOnlyPeaks()
 void Notes::Block::keepOnlyPeaks(int nTime)
 {
     if (block[nTime][lastNote] <= PEAK_MINIMUM ||
+            block[nTime][lastNote] < block[nTime].maxAmpl - DELTA_PEAK ||
             block[nTime][lastNote] < block[nTime][lastNote - 1]) {
         block[nTime][lastNote] = -INFINITY;
     }
@@ -160,7 +168,9 @@ void Notes::Block::keepOnlyPeaks(int nTime)
             i--;
         }
         if (block[nTime][i] <= PEAK_MINIMUM ||
+                block[nTime][i] < block[nTime].maxAmpl - DELTA_PEAK ||
                 block[nTime][i] < block[nTime][i - 1]) {
+
             block[nTime][i] = -INFINITY; // there is no 'seconds' in melody!!!
         }
     }
@@ -231,6 +241,9 @@ int Notes::minBlock(NoteBlock notes[])
     int min = 0;
 
     for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+        if (notes[i].size == 0) {
+            continue;
+        }
         if (notes[i].current == notes[i].size) {
             notes[i].current --;
             notes[i].noteBlock[notes[i].current].initTime = INFINITY;

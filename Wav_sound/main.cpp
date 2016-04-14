@@ -6,7 +6,7 @@
 
 int main()
 {
-    Notes perem("C:\\Users\\Admin\\Downloads\\sounds\\etude.wav");
+    Notes perem("C:\\Users\\Admin\\Downloads\\sounds\\Am-C7-Em-chiptune.wav");
     vector<Note> a;
     perem.generateMidView(a);
 

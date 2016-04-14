@@ -9,7 +9,7 @@
 
 const int NUMBER_OF_BLOCKS = 3; // or 4, I'll define later
 const float PEAK_MINIMUM = 20.0; /// attention!!! I can't define the lavel of silence now!
-//const float DELTA_PEAK = 1.0; /// attention!!!
+const float DELTA_PEAK = 1.0; /// attention!!!
 
 
 struct Note
@@ -26,6 +26,15 @@ struct NoteBlock
     int size;
 };
 
+struct AmplNotes
+{
+    array<float, NUMBER_OF_NOTES> amplNotes;
+    float maxAmpl;
+    float& operator[] (int n) {
+        return amplNotes[n];
+    }
+};
+
 class Notes
 {
 public:
@@ -37,7 +46,7 @@ private:
     //enum TypeFrame {SIMPLE, WITH_OVERLAP};
     struct Block
     {
-        vector<array<float, NUMBER_OF_NOTES>> block;
+        vector<AmplNotes> block;
         unsigned int frameSize;
         int firstNote;
         int lastNote;
@@ -49,7 +58,7 @@ private:
                      const float* const delta);
         void freqToNote(const float* const outFft,
                         const float* const delta,
-                        array<float, NUMBER_OF_NOTES> & notes);
+                        AmplNotes & notes);
         void keepOnlyPeaks(int nTime);
         void peaksToNotes(vector<Note>& notes);
         void dump(int nTime, ostream& fout);
@@ -68,7 +77,7 @@ private:
     void notesFromPeaks(vector<Note>& notesOut);
 
     int minBlock(NoteBlock notes[]);
-    //int maxNote(array<float, NUMBER_OF_NOTES> & ampl);
+    //int maxNote(AmplNotes & ampl);
 };
 
 #endif // NOTES_H
