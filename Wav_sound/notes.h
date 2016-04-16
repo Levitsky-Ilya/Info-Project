@@ -16,7 +16,9 @@
 #include "../fftAlgorithm/fft.h"
 #include "frequencies_for_notes.h"
 
-const int NUMBER_OF_BLOCKS = 3; // or 4, I'll define later
+#define NUMBER_OF_BLOCKS 3 // type 4 to use four blocks
+
+//const int NUMBER_OF_BLOCKS = 3; // or 4, I'll define later
 const float PEAK_MINIMUM = 20.0; /// attention!!! I can't define the lavel of silence now!
 const float DELTA_PEAK = 1.0; /// attention!!!
 

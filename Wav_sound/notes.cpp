@@ -17,7 +17,13 @@
 #include <assert.h>
 #include <fstream>
 
+#if NUMBER_OF_BLOCKS == 4
+const int NOTE_C[NUMBER_OF_BLOCKS] = {36, 24, 12, 0};
+#else
 const int NOTE_C[NUMBER_OF_BLOCKS] = {24, 12, 0};
+#endif
+
+#define DUMP_BEFORE_PEAKS 1 // type 1 to dump before selection peaks to dump.txt
 
 Notes::Notes(const char *fileName)
 {
@@ -53,7 +59,10 @@ Notes::Notes(const char *fileName)
     blocks[0].lastNote = NUMBER_OF_NOTES - 1;
     blocks[1].lastNote = blocks[0].firstNote;
     blocks[2].lastNote = blocks[1].firstNote;
-    //blocks[3].lastNote = blocks[2].firstNote;
+#if NUMBER_OF_BLOCKS == 4
+    blocks[3].lastNote = blocks[2].firstNote;
+#endif
+
 }
 
 void Notes::generateMidView(vector<Note>& notesOut)
@@ -61,22 +70,26 @@ void Notes::generateMidView(vector<Note>& notesOut)
     thread thr0(blocks[0].execute, &(blocks[0]), ref(amplTime), ref(initDeltaFreq));
     thread thr1(blocks[1].execute, &(blocks[1]), ref(amplTime), ref(initDeltaFreq));
     thread thr2(blocks[2].execute, &(blocks[2]), ref(amplTime), ref(initDeltaFreq));
-    //thread thr3(blocks[3].execute, &(blocks[3]), ref(amplTime), ref(initDeltaFreq));
+#if NUMBER_OF_BLOCKS == 4
+    thread thr3(blocks[3].execute, &(blocks[3]), ref(amplTime), ref(initDeltaFreq));
+#endif
 
     thr0.join();
     thr1.join();
     thr2.join();
-    //thr3.join();
+#if NUMBER_OF_BLOCKS == 4
+    thr3.join();
+#endif
 
     /*for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         blocks[i].execute(amplTime, initDeltaFreq);
     }*/
 
-/****************************/
+#if DUMP_BEFORE_PEAKS
     ofstream fout("dump.txt");
     dump(fout);
     fout.close();
-/***************************/
+#endif
 
     keepOnlyPeaks();
 
@@ -225,12 +238,16 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
     thread thr0(blocks[0].peaksToNotes, &(blocks[0]), ref(notes[0].noteBlock));
     thread thr1(blocks[1].peaksToNotes, &(blocks[1]), ref(notes[1].noteBlock));
     thread thr2(blocks[2].peaksToNotes, &(blocks[2]), ref(notes[2].noteBlock));
-    //thread thr3(blocks[3].peaksToNotes, &(blocks[3]), ref(notes[3].noteBlock));
+#if NUMBER_OF_BLOCKS == 4
+    thread thr3(blocks[3].peaksToNotes, &(blocks[3]), ref(notes[3].noteBlock));
+#endif
 
     thr0.join();
     thr1.join();
     thr2.join();
-    //thr3.join();
+#if NUMBER_OF_BLOCKS == 4
+    thr3.join();
+#endif
 
     /*for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         blocks[i].peaksToNotes(notes[i].noteBlock);
