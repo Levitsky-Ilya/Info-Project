@@ -53,8 +53,8 @@ vector<struct Notes> breaker(vector<struct Notes> & queue) {
 		queue.pop_back();
 	}
 
-	for (auto it1 = note_l.begin(); it1 != note_l.end(); ++it1 ) {
-		for (auto it2 = note_timing.begin(); it2 != note_timing.end(); ++it2){
+	for (auto it2 = note_timing.begin(); it2 != note_timing.end(); ++it2){
+		for (auto it1 = note_l.begin(); it1 != note_l.end(); ++it1 ) {
 			if ((it1->init_time < *it2)&&((it1->init_time + it1->duration) > *it2)) {
 				add_note.duration = it1->init_time + it1->duration - *it2;
 				add_note.init_time = *it2;
@@ -129,12 +129,12 @@ int main()
 
 	map<float, string> freq_map;
 
-	freq_map[261.63] =   "c' "; freq_map[277.18] = "cis' ";
-	freq_map[293.66] =   "d' "; freq_map[311.13] = "dis' ";
-	freq_map[329.63] =   "e' "; freq_map[349.23] =   "f' ";
-	freq_map[369.99] = "fis' "; freq_map[392.00] =   "g' ";
-	freq_map[415.30] = "gis' "; freq_map[440.00] =   "a' ";
-	freq_map[466.16] = "ais' "; freq_map[493.88] =   "b' ";
+	freq_map[261.63] =   "c'"; freq_map[277.18] = "cis'";
+	freq_map[293.66] =   "d'"; freq_map[311.13] = "dis'";
+	freq_map[329.63] =   "e'"; freq_map[349.23] =   "f'";
+	freq_map[369.99] = "fis'"; freq_map[392.00] =   "g'";
+	freq_map[415.30] = "gis'"; freq_map[440.00] =   "a'";
+	freq_map[466.16] = "ais'"; freq_map[493.88] =   "b'";
 
 	map<float, string> lfreq_map;
 
@@ -174,7 +174,7 @@ int main()
 		{0.2500, std::bind(writer, "4 ",  "",    "",    _1)},
 		{0.3125, std::bind(writer, "4~ ", "16 ", "",    _1)},
 		{0.3750, std::bind(writer, "4. ", "",    "",    _1)},
-		{0.4375, std::bind(writer, "4 ",  "8. ", "",    _1)},
+		{0.4375, std::bind(writer, "4~ ", "8. ", "",    _1)},
 		{0.5000, std::bind(writer, "2 ",  "",    "",    _1)},
 		{0.5625, std::bind(writer, "2~ ", "16 ", "",    _1)},
 		{0.6250, std::bind(writer, "2~ ", "8 ",  "",    _1)},
@@ -190,26 +190,33 @@ int main()
 	Notes note_1;
 	note_1.freq = 277.18f;
 	note_1.n = 1;
-	note_1.duration = 0.25f;
+	note_1.duration = 0.4f;
 	note_1.init_time = 0.1;
 
 	Notes note_2;
 	note_2.freq = 493.88f;
 	note_2.n = 2;
-	note_2.duration = 0.78f;
+	note_2.duration = 1.16f;
 	note_2.init_time = 0.1;
 
 	Notes note_3;
-	note_3.freq = 130.81f;
+	note_3.freq = 349.23f;
 	note_3.n = 3;
-	note_3.duration = 0.25f;
-	note_3.init_time = 0.71;
+	note_3.duration = 0.16f;
+	note_3.init_time = 0.5;
+
+	Notes note_5;
+	note_5.freq = 130.81f;
+	note_5.n = 5;
+	note_5.duration = 0.25f;
+	note_5.init_time = 0.71;
 
 	vector<struct Notes> note_n_queue;
 	note_n_queue.push_back(note_1);
 	note_n_queue.push_back(note_2);
+	note_n_queue.push_back(note_3);
 	vector<struct Notes> note_l_queue;
-	note_l_queue.push_back(note_3);
+	note_l_queue.push_back(note_5);
 
 	breaker(note_n_queue);
 
@@ -222,9 +229,9 @@ int main()
 	int comb_num = 0;
 	bool first_pause = true;
 
-	for (unsigned int i = 0; i < note_n_queue.size(); i++)
+	for (unsigned int i = 0; i < note_n_queue.size(); )
 	{
-		string name;
+		string name = "< ";
 
 		const float bit = 0.03125;
 
@@ -259,14 +266,19 @@ int main()
 				while (((i+k) < note_n_queue.size())&&
 					  (note_n_queue[i].init_time == note_n_queue[i+k].init_time)) {
 					f << freq_map[note_n_queue[i+k].freq];
+					f << " ";
 					name += freq_map[note_n_queue[i+k].freq];
+					name += " ";
 					k++;
 				}
 				comb_num = k;
 				f << ">";
+				name += ">";
 			} else {
 				f << freq_map[note_n_queue[i].freq];
-				name = freq_map[note_n_queue[i].freq];
+				name = "";
+				name += freq_map[note_n_queue[i].freq];
+				comb_num = 1;
 			}
 
 			tmp = freq_array;
@@ -280,11 +292,14 @@ int main()
 				f << " )";
 			}
 
-			i = i + comb_num - 1;
+			i = i + comb_num;
 
 			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-				if (near(it->pause_dur, note_n_queue[i+2].init_time - note_n_queue[i+1].init_time - note_n_queue[i+1].duration, bit, bit)) {
+				if (near(it->pause_dur, note_n_queue[i+1].init_time - note_n_queue[i].init_time - note_n_queue[i].duration, bit, bit)) {
 					f << it->pause_name;
+					for (size_t m = 0; m < tmp.size(); m++) {
+						tmp[m] = 0;
+					}
 				}
 			}
 		}
