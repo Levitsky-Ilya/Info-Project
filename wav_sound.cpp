@@ -14,6 +14,8 @@
 #define DEBUG 0     //Set to 1 to display info while scanning the file
 #define TIME 0      //Set to 1 to measure time spent on scanning
 
+#include "exception.h"
+
 /** WavFile header*/
 #include "wav_sound.h"
 
@@ -41,9 +43,6 @@ const int SECONDS_IN_MINUTE = 60;
 const int PAGE_SIZE = 4096;
 const int THREE_QUART_PAGE_SIZE = 3072;
 
-//Try to use mapping!!
-//CreateFileMapping(file, NULL, PAGE_READONLY, 0, subchunk2Size, NULL)
-
 /** Constructor **/
 WavFile::WavFile (const char* fileName)
 {
@@ -53,54 +52,70 @@ WavFile::WavFile (const char* fileName)
     err = strcpy_s(fileName_, strlen(fileName) + 1, fileName);
     if (err)
     {
-      cout << "Failed save filename \"" << fileName << "\" , error " << err << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+      /* Not sure which way is better
+      string msg;
+      char* strerr = new char[20]
+      itoa(err, strerr, 10);
+      string msg += "Failed save filename \"";
+      string msg += fileName;
+      string msg += "\" , error ";
+      string msg += strerr;
+      delete [] strerr;
+      */
+      char* msg = new char[40+255+20]; ///THIS exact numbers? define them!!!
+      sprintf(msg, "Failed to save filename \"%s\", error %d", fileName, err);
+      string msgstr = msg;
+      throw Exception(Exception::SAVE_FAIL, msgstr);
     }
     err = fopen_s(&file, fileName, "rb");
     if (err)
     {
-      cout << "Failed open file" << fileName << " , error " << err << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+        char* msg = new char[40+255+20];
+        sprintf(msg, "Failed to open filename \"%s\", error %d", fileName, err);
+        string msgstr = msg;
+        throw Exception(Exception::OPEN_FAIL, msgstr);
     }
 
     /* Reads header of .wav file, converts to struct WavHeader. */
     err = fread(&header, sizeof(WavHeader), 1, file);
     if (err != 1) {
+      char* msg = new char[40+255+20];
       if(feof(file)) {
-        cout << "EOF met too soon." << endl;
+        sprintf(msg, "EOF met too soon.");
+        string msgstr = msg;
+        throw Exception(Exception::EOF_SOON, msgstr);
       } else {
-        cout << "Undefined error while reading file." << endl;
+        sprintf(msg, "Undefined error (%d) while reading file.", err);
+        string msgstr = msg;
+        throw Exception(Exception::EREAD, msgstr);
         /** Can/Should we define?!!! */
       }
-      system("pause");
-      exit(EXIT_FAILURE);
     }
 
     /* Checking whether is Wav file or not. TRY TO throw exception if fault.*/
     if(strnicmp(header.chunkId, "RIFF", sizeof(header.chunkId)) != 0) {
-      cout << sizeof(header.chunkId) << endl;
-      cout << "Is not RIFF sequence. (" << header.chunkId << ")" << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+      char* msg = new char[40+255+20];
+      sprintf(msg, "Is not RIFF sequence. (%s)", header.chunkId);
+      string msgstr = msg;
+      throw Exception(Exception::BAD_RIFF, msgstr);
     }
     if(strnicmp(header.format, "WAVE", sizeof(header.format)) != 0) {
-      cout << "Is not WAVE format. (" << header.format << ")" << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+      char* msg = new char[40+255+20];
+      sprintf(msg, "Is not WAVE format. (%s)", header.format);
+      string msgstr = msg;
+      throw Exception(Exception::BAD_WAVE, msgstr);
     }
     if(strnicmp(header.subchunk1Id, "fmt ", sizeof(header.subchunk1Id)) != 0) {
-      cout << "Couldn't find fmt subchunk, found:"
-              " (" << header.subchunk1Id << ")" << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+      char* msg = new char[40+255+20];
+      sprintf(msg, "Couldn't find fmt subchunk, found: (%s)", header.subchunk1Id);
+      string msgstr = msg;
+      throw Exception(Exception::BAD_FMT, msgstr);
     }
     if(strnicmp(header.subchunk2Id, "data",  sizeof(header.subchunk2Id)) != 0) {
-      cout << "Could not find data subchunk, found:"
-              " (" << header.subchunk2Id << ")" << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+      char* msg = new char[40+255+20];
+      sprintf(msg, "Couldn't find data subchunk, found: (%s)", header.subchunk2Id);
+      string msgstr = msg;
+      throw Exception(Exception::BAD_DATA, msgstr);
     }
     
     /* Calculating duration of playing in min:sec. */
@@ -196,10 +211,10 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
        header.bitsPerSample > sizeof(int) * BITS_IN_BYTE ||
        header.bitsPerSample < sizeof(char) * BITS_IN_BYTE)
     {
-        //Throw exception if maxAmplitude == 0xff and depth !=8 ????
-       cout << "Unexpected depth of sounding: "
-            << header.bitsPerSample << endl;
-        exit(EXIT_FAILURE);
+      char* msg = new char[40+255+20];
+      sprintf(msg, "Unexpected depth of sounding: %d", header.bitsPerSample);
+      string msgstr = msg;
+      throw Exception(Exception::UNEXP_DEPTH, msgstr);
     }
 
     fillVector(amplTime);
@@ -224,9 +239,10 @@ void WavFile::fillVector (vector<float> &amplTime)
     err = fopen_s(&file, fileName_, "rb");
     if (err)
     {
-      cout << "Failed open file" << fileName_ << " , error " << err << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+        char* msg = new char[40+255+20];
+        sprintf(msg, "fillVector failed to open filename \"%s\", error %d", fileName_, err);
+        string msgstr = msg;
+        throw Exception(Exception::OPEN_FAIL, msgstr);
     }
 
     fseek(file, sizeof(WavHeader), SEEK_SET);
@@ -292,22 +308,18 @@ void WavFile::fillVector (vector<float> &amplTime)
 /** Additional method to print content of vector*/
 void WavFile::dumpVector(vector<float> amplTime)
 {
-    cout << "Elemets in vector: " << amplTime.size() << endl;
+    long sizeOfVector = amplTime.size();
+    cout << "Elemets in vector: " << sizeOfVector << endl;
     cout << "Input No to display this element from vector." << endl;
     cout << "Enter negative No to exit." << endl;
-    system("pause");
-    /*
-    for (vector<float>::iterator it = amplTime.begin();
-         it != amplTime.end();
-         it++)
-    {
-      cout << *it << '\t';
-    }
-    */
+
     long i;
     cin >> i;
     while (i >= 0) {
-        cout << amplTime[i] << endl;
+        if (i < sizeOfVector)
+          cout << amplTime[i] << endl;
+        else
+          cout << "Too big No. " << sizeOfVector << "elements total." << endl;
         cin >> i;
     }
 }
