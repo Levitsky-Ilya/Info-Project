@@ -1,9 +1,29 @@
+/**
+ * notes.cpp
+ *
+ * Description: Notes class realization.
+ *              Generates intermediate notes viev:
+ *              applies the fft algorithm to vector<float> of amplitudes,
+ *              analyzes amplitudes of frequences,
+ *              generates amplitudes of notes,
+ *              finds the maximum peaks of amplitudes,
+ *              finally returnes notes of peaks as vector<Note>.
+ * @author Maria Kataeva mariya.katayeva@phystech.edu
+ * Copyright 2016
+ **/
+
 #include "notes.h"
 #include <thread>
 #include <assert.h>
 #include <fstream>
 
+#if NUMBER_OF_BLOCKS == 4
+const int NOTE_C[NUMBER_OF_BLOCKS] = {36, 24, 12, 0};
+#else
 const int NOTE_C[NUMBER_OF_BLOCKS] = {24, 12, 0};
+#endif
+
+#define DUMP_BEFORE_PEAKS 1 // type 1 to dump before selection peaks to dump.txt
 
 Notes::Notes(const char *fileName)
 {
@@ -39,7 +59,10 @@ Notes::Notes(const char *fileName)
     blocks[0].lastNote = NUMBER_OF_NOTES - 1;
     blocks[1].lastNote = blocks[0].firstNote;
     blocks[2].lastNote = blocks[1].firstNote;
-    //blocks[3].lastNote = blocks[2].firstNote;
+#if NUMBER_OF_BLOCKS == 4
+    blocks[3].lastNote = blocks[2].firstNote;
+#endif
+
 }
 
 void Notes::generateMidView(vector<Note>& notesOut)
@@ -47,22 +70,26 @@ void Notes::generateMidView(vector<Note>& notesOut)
     thread thr0(blocks[0].execute, &(blocks[0]), ref(amplTime), ref(initDeltaFreq));
     thread thr1(blocks[1].execute, &(blocks[1]), ref(amplTime), ref(initDeltaFreq));
     thread thr2(blocks[2].execute, &(blocks[2]), ref(amplTime), ref(initDeltaFreq));
-    //thread thr3(blocks[3].execute, &(blocks[3]), ref(amplTime), ref(initDeltaFreq));
+#if NUMBER_OF_BLOCKS == 4
+    thread thr3(blocks[3].execute, &(blocks[3]), ref(amplTime), ref(initDeltaFreq));
+#endif
 
     thr0.join();
     thr1.join();
     thr2.join();
-    //thr3.join();
+#if NUMBER_OF_BLOCKS == 4
+    thr3.join();
+#endif
 
     /*for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         blocks[i].execute(amplTime, initDeltaFreq);
     }*/
 
-/****************************/
+#if DUMP_BEFORE_PEAKS
     ofstream fout("dump.txt");
     dump(fout);
     fout.close();
-/***************************/
+#endif
 
     keepOnlyPeaks();
 
@@ -74,8 +101,7 @@ void Notes::generateMidView(vector<Note>& notesOut)
 void Notes::Block::execute(const vector<float> & amplTime,
                            const float * const delta)
 {
-    array<float, NUMBER_OF_NOTES> amplNotes;
-    amplNotes.fill(-INFINITY);
+    AmplNotes amplNotes;
 
     CFFT fft;
 
@@ -100,13 +126,21 @@ void Notes::Block::execute(const vector<float> & amplTime,
 
 void Notes::Block::freqToNote(const float * const outFft,
                               const float * const delta,
-                              array<float, NUMBER_OF_NOTES> & notes)
+                              AmplNotes & notes)
 {
     float freq = outNum * diffFreq;
     float deltaDown = 0.0;
 
     int k = firstNote;
+    float max = -INFINITY;
+
+    notes.amplNotes.fill(-INFINITY);
+
     for (unsigned int j = outNum; (j < frameSize) && (k < lastNote); j++) {
+
+        if(max < outFft[j]) {
+            max = outFft[j];
+        }
 
         deltaDown = freq - initNotes[k];
 
@@ -124,6 +158,9 @@ void Notes::Block::freqToNote(const float * const outFft,
             k++;
         }
     }
+
+    notes.maxAmpl = max;
+
     return;
 }
 
@@ -136,7 +173,9 @@ void Notes::keepOnlyPeaks()
 
         //after this cycle first notes of elder blocks are peaks:
         for (int j = 0; j < NUMBER_OF_BLOCKS; j++) {
-            blocks[j].keepOnlyPeaks(i >> j); // bad!!!
+            if (i % (1 << j) == 0) {
+                blocks[j].keepOnlyPeaks(i >> j);
+            }
         }
         //because of it we need this function:
         checkPeaks(i);
@@ -146,6 +185,7 @@ void Notes::keepOnlyPeaks()
 void Notes::Block::keepOnlyPeaks(int nTime)
 {
     if (block[nTime][lastNote] <= PEAK_MINIMUM ||
+            block[nTime][lastNote] < block[nTime].maxAmpl - DELTA_PEAK ||
             block[nTime][lastNote] < block[nTime][lastNote - 1]) {
         block[nTime][lastNote] = -INFINITY;
     }
@@ -160,7 +200,9 @@ void Notes::Block::keepOnlyPeaks(int nTime)
             i--;
         }
         if (block[nTime][i] <= PEAK_MINIMUM ||
+                block[nTime][i] < block[nTime].maxAmpl - DELTA_PEAK ||
                 block[nTime][i] < block[nTime][i - 1]) {
+
             block[nTime][i] = -INFINITY; // there is no 'seconds' in melody!!!
         }
     }
@@ -173,6 +215,10 @@ void Notes::complementBlocks(int nTime)
                 blocks[i + 1].block[nTime >> (i+1)][blocks[i + 1].lastNote]) {
             blocks[i].block[nTime >> i][blocks[i].firstNote] =
                     blocks[i + 1].block[nTime >> (i+1)][blocks[i + 1].lastNote];
+        }
+        else {
+            blocks[i + 1].block[nTime >> (i+1)][blocks[i + 1].lastNote] =
+                    blocks[i].block[nTime >> i][blocks[i].firstNote];
         }
     }
 }
@@ -197,12 +243,16 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
     thread thr0(blocks[0].peaksToNotes, &(blocks[0]), ref(notes[0].noteBlock));
     thread thr1(blocks[1].peaksToNotes, &(blocks[1]), ref(notes[1].noteBlock));
     thread thr2(blocks[2].peaksToNotes, &(blocks[2]), ref(notes[2].noteBlock));
-    //thread thr3(blocks[3].peaksToNotes, &(blocks[3]), ref(notes[3].noteBlock));
+#if NUMBER_OF_BLOCKS == 4
+    thread thr3(blocks[3].peaksToNotes, &(blocks[3]), ref(notes[3].noteBlock));
+#endif
 
     thr0.join();
     thr1.join();
     thr2.join();
-    //thr3.join();
+#if NUMBER_OF_BLOCKS == 4
+    thr3.join();
+#endif
 
     /*for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         blocks[i].peaksToNotes(notes[i].noteBlock);
@@ -231,6 +281,12 @@ int Notes::minBlock(NoteBlock notes[])
     int min = 0;
 
     for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+        if (notes[i].size == 0) {
+            if (i == min) {
+                min++;
+            }
+            continue;
+        }
         if (notes[i].current == notes[i].size) {
             notes[i].current --;
             notes[i].noteBlock[notes[i].current].initTime = INFINITY;
@@ -315,6 +371,7 @@ void Notes::Block::dump(int ntime, ostream &fout)
     fout << "frame size = " << frameSize << endl;
     fout << "time = " << ntime << endl;
     fout << "size of block = " << block.size() << endl;
+    fout << "max ampl " << block[ntime].maxAmpl << endl;
     fout << endl;
     for (int i = firstNote; i <= lastNote; i++) {
         //assert(ntime < block.size());
