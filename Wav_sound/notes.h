@@ -1,3 +1,12 @@
+/**
+ * notes.h
+ *
+ * Description: Notes class header.
+ *
+ * @author Maria Kataeva mariya.katayeva@phystech.edu
+ * Copyright 2016
+ **/
+
 #ifndef NOTES_H
 #define NOTES_H
 

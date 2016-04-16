@@ -1,3 +1,17 @@
+/**
+ * notes.cpp
+ *
+ * Description: Notes class realization.
+ *              Generates intermediate notes viev:
+ *              applies the fft algorithm to vector<float> of amplitudes,
+ *              analyzes amplitudes of frequences,
+ *              generates amplitudes of notes,
+ *              finds the maximum peaks of amplitudes,
+ *              finally returnes notes of peaks as vector<Note>.
+ * @author Maria Kataeva mariya.katayeva@phystech.edu
+ * Copyright 2016
+ **/
+
 #include "notes.h"
 #include <thread>
 #include <assert.h>
@@ -184,6 +198,10 @@ void Notes::complementBlocks(int nTime)
             blocks[i].block[nTime >> i][blocks[i].firstNote] =
                     blocks[i + 1].block[nTime >> (i+1)][blocks[i + 1].lastNote];
         }
+        else {
+            blocks[i + 1].block[nTime >> (i+1)][blocks[i + 1].lastNote] =
+                    blocks[i].block[nTime >> i][blocks[i].firstNote];
+        }
     }
 }
 
@@ -242,6 +260,9 @@ int Notes::minBlock(NoteBlock notes[])
 
     for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         if (notes[i].size == 0) {
+            if (i == min) {
+                min++;
+            }
             continue;
         }
         if (notes[i].current == notes[i].size) {
