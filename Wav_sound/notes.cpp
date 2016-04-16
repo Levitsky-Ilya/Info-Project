@@ -102,7 +102,6 @@ void Notes::Block::execute(const vector<float> & amplTime,
                            const float * const delta)
 {
     AmplNotes amplNotes;
-    amplNotes.amplNotes.fill(-INFINITY);
 
     CFFT fft;
 
@@ -134,6 +133,9 @@ void Notes::Block::freqToNote(const float * const outFft,
 
     int k = firstNote;
     float max = -INFINITY;
+
+    notes.amplNotes.fill(-INFINITY);
+
     for (unsigned int j = outNum; (j < frameSize) && (k < lastNote); j++) {
 
         if(max < outFft[j]) {
@@ -156,6 +158,7 @@ void Notes::Block::freqToNote(const float * const outFft,
             k++;
         }
     }
+
     notes.maxAmpl = max;
 
     return;
@@ -170,7 +173,9 @@ void Notes::keepOnlyPeaks()
 
         //after this cycle first notes of elder blocks are peaks:
         for (int j = 0; j < NUMBER_OF_BLOCKS; j++) {
-            blocks[j].keepOnlyPeaks(i >> j); // bad!!!
+            if (i % (1 << j) == 0) {
+                blocks[j].keepOnlyPeaks(i >> j);
+            }
         }
         //because of it we need this function:
         checkPeaks(i);
@@ -366,6 +371,7 @@ void Notes::Block::dump(int ntime, ostream &fout)
     fout << "frame size = " << frameSize << endl;
     fout << "time = " << ntime << endl;
     fout << "size of block = " << block.size() << endl;
+    fout << "max ampl " << block[ntime].maxAmpl << endl;
     fout << endl;
     for (int i = firstNote; i <= lastNote; i++) {
         //assert(ntime < block.size());
