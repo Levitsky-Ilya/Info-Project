@@ -361,6 +361,15 @@ int main()
 		i = i + comb_num;
 	}
 
+	int pause_n_counter = 0;
+	while ((int)(note_l_queue[note_l_queue.size()-1].init_time
+			+ note_l_queue[note_l_queue.size()-1].duration
+				- note_n_queue[note_n_queue.size()-1].init_time
+					- note_n_queue[note_n_queue.size()-1].duration) - pause_n_counter > 1) {
+		f << "r1 ";
+		pause_n_counter++;
+	}
+
 	f << "\n";
 	f << "}\n";
 
@@ -507,6 +516,15 @@ int main()
 		}
 
 		i = i + comb_l_num;
+	}
+
+	int pause_l_counter = 0;
+	while ((int)(note_n_queue[note_n_queue.size()-1].init_time
+			+ note_n_queue[note_n_queue.size()-1].duration
+				- note_l_queue[note_l_queue.size()-1].init_time
+					- note_l_queue[note_l_queue.size()-1].duration) - pause_l_counter > 1) {
+		f << "r1 ";
+		pause_l_counter++;
 	}
 
 	f << "\n";
