@@ -3,7 +3,6 @@
 
 struct Notes
 {
-	float freq;
 	int n;
 	float duration;
 	float init_time;
@@ -11,7 +10,7 @@ struct Notes
 	bool operator< (const Notes & rhs) {
 		return (init_time == rhs.init_time ?
 					duration == rhs.duration ?
-						freq < rhs.freq :
+						n < rhs.n :
 						duration < rhs.duration :
 					init_time < rhs.init_time
 				);

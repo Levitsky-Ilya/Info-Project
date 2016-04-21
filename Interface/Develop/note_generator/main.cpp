@@ -61,7 +61,7 @@ vector<struct Notes> breaker(vector<struct Notes> & queue) {
 			if ((it1->init_time < *it2)&&((it1->init_time + it1->duration) > *it2)) {
 				add_note.duration = it1->init_time + it1->duration - *it2;
 				add_note.init_time = *it2;
-				add_note.freq = it1->freq;
+				add_note.n = it1->n;
 
 				it1->duration = *it2 - it1->init_time;
 
@@ -85,23 +85,23 @@ int main()
 {
 	using namespace std::placeholders;
 
-	map<float, string> freq_map;
+	map<int, string> freq_map;
 
-	freq_map[261.63] =   "c'"; freq_map[277.18] = "cis'";
-	freq_map[293.66] =   "d'"; freq_map[311.13] = "dis'";
-	freq_map[329.63] =   "e'"; freq_map[349.23] =   "f'";
-	freq_map[369.99] = "fis'"; freq_map[392.00] =   "g'";
-	freq_map[415.30] = "gis'"; freq_map[440.00] =   "a'";
-	freq_map[466.16] = "ais'"; freq_map[493.88] =   "b'";
+	freq_map[37] =   "c'"; freq_map[38] = "cis'";
+	freq_map[39] =   "d'"; freq_map[39] = "dis'";
+	freq_map[40] =   "e'"; freq_map[41] =   "f'";
+	freq_map[42] = "fis'"; freq_map[43] =   "g'";
+	freq_map[44] = "gis'"; freq_map[45] =   "a'";
+	freq_map[46] = "ais'"; freq_map[47] =   "b'";
 
-	map<float, string> lfreq_map;
+	map<int, string> lfreq_map;
 
-	lfreq_map[130.81] =   "c"; lfreq_map[138.59] = "cis";
-	lfreq_map[146.83] =   "d"; lfreq_map[155.56] = "dis";
-	lfreq_map[164.81] =   "e"; lfreq_map[174.61] =   "f";
-	lfreq_map[185.00] = "fis"; lfreq_map[196.00] =   "g";
-	lfreq_map[207.65] = "gis"; lfreq_map[220.00] =   "a";
-	lfreq_map[233.08] = "ais"; lfreq_map[246.94] =   "b";
+	lfreq_map[25] =   "c"; lfreq_map[26] = "cis";
+	lfreq_map[27] =   "d"; lfreq_map[28] = "dis";
+	lfreq_map[29] =   "e"; lfreq_map[30] =   "f";
+	lfreq_map[31] = "fis"; lfreq_map[32] =   "g";
+	lfreq_map[33] = "gis"; lfreq_map[34] =   "a";
+	lfreq_map[35] = "ais"; lfreq_map[36] =   "b";
 
 
 	struct NotePause {
@@ -146,57 +146,48 @@ int main()
 
 
 	Notes note_1;
-	note_1.freq = 277.18f;
-	note_1.n = 1;
+	note_1.n = 38;
 	note_1.duration = 0.4f;
 	note_1.init_time = 0.1;
 
 	Notes note_2;
-	note_2.freq = 493.88f;
-	note_2.n = 2;
+	note_2.n = 47;
 	note_2.duration = 1.16f;
 	note_2.init_time = 0.1;
 
 	Notes note_3;
-	note_3.freq = 349.23f;
-	note_3.n = 3;
+	note_3.n = 41;
 	note_3.duration = 0.16f;
 	note_3.init_time = 0.5;
 
 	Notes note_4;
-	note_4.freq = 392.00f;
-	note_4.n = 4;
+	note_4.n = 43;
 	note_4.duration = 3.5f;
 	note_4.init_time = 4.0;
 
 	Notes note_5;
-	note_5.freq = 440.00f;
-	note_5.n = 4;
+	note_5.n = 45;
 	note_5.duration = 2.68f;
 	note_5.init_time = 4.5;
 
 	Notes note_6;
-	note_6.freq = 261.63f;
-	note_6.n = 6;
+	note_6.n = 37;
 	note_6.duration = 0.25f;
 	note_6.init_time = 5.8;
 
 
 	Notes note_7;
-	note_7.freq = 130.81f;
-	note_7.n = 7;
+	note_7.n = 25;
 	note_7.duration = 0.25f;
 	note_7.init_time = 0;
 
 	Notes note_8;
-	note_8.freq = 233.08f;
-	note_8.n = 8;
+	note_8.n = 35;
 	note_8.duration = 3.3f;
 	note_8.init_time = 0.5;
 
 	Notes note_9;
-	note_9.freq = 155.56f;
-	note_9.n = 6;
+	note_9.n = 28;
 	note_9.duration = 1.0f;
 	note_9.init_time = 1.5;
 
@@ -218,9 +209,9 @@ int main()
 	ofstream f("E:/Programs/Lilypond/file.ly");
 	f << "normal = \\new Staff { \n";
 
-	vector<float> tmp;
+	vector<int> tmp;
 
-	vector<float> freq_array;
+	vector<int> freq_array;
 	int comb_num = 0;
 	bool first_pause = true;
 
@@ -240,7 +231,7 @@ int main()
 		int k = 0;
 		while (((i+k) < note_n_queue.size())&&
 			  (note_n_queue[i+k].init_time == note_n_queue[i].init_time)) {
-			freq_array.push_back(note_n_queue[i+k].freq);
+			freq_array.push_back(note_n_queue[i+k].n);
 			k++;
 		}
 		bool flag = true;
@@ -258,9 +249,9 @@ int main()
 			f << "< ";
 			while (((i+k) < note_n_queue.size())&&
 				  (note_n_queue[i].init_time == note_n_queue[i+k].init_time)) {
-				f << freq_map[note_n_queue[i+k].freq];
+				f << freq_map[note_n_queue[i+k].n];
 				f << " ";
-				name += freq_map[note_n_queue[i+k].freq];
+				name += freq_map[note_n_queue[i+k].n];
 				name += " ";
 				k++;
 			}
@@ -269,11 +260,11 @@ int main()
 			name += ">";
 			tmp = freq_array;
 		} else {
-			f << freq_map[note_n_queue[i].freq];
+			f << freq_map[note_n_queue[i].n];
 			name = "";
-			name += freq_map[note_n_queue[i].freq];
+			name += freq_map[note_n_queue[i].n];
 			comb_num = 1;
-			if (note_n_queue[i].freq != note_n_queue[i+1].freq) {
+			if (note_n_queue[i].n != note_n_queue[i+1].n) {
 				for (size_t m = 0; m < tmp.size(); m++) {
 					tmp[m] = 0;
 				}
@@ -373,9 +364,9 @@ int main()
 	f << "\n";
 	f << "}\n";
 
-	vector<float> tmp_l;
+	vector<int> tmp_l;
 
-	vector<float> freq_l_array;
+	vector<int> freq_l_array;
 	int comb_l_num = 0;
 	bool first_l_pause = true;
 
@@ -398,7 +389,7 @@ int main()
 		int k = 0;
 		while (((i+k) < note_l_queue.size())&&
 			  (note_l_queue[i+k].init_time == note_l_queue[i].init_time)) {
-			freq_l_array.push_back(note_l_queue[i+k].freq);
+			freq_l_array.push_back(note_l_queue[i+k].n);
 			k++;
 		}
 		bool flag = true;
@@ -416,9 +407,9 @@ int main()
 			f << "< ";
 			while (((i+k) < note_l_queue.size())&&
 				  (note_l_queue[i].init_time == note_l_queue[i+k].init_time)) {
-				f << lfreq_map[note_l_queue[i+k].freq];
+				f << lfreq_map[note_l_queue[i+k].n];
 				f << " ";
-				name += lfreq_map[note_l_queue[i+k].freq];
+				name += lfreq_map[note_l_queue[i+k].n];
 				name += " ";
 				k++;
 			}
@@ -427,11 +418,11 @@ int main()
 			name += ">";
 			tmp_l = freq_l_array;
 		} else {
-			f << lfreq_map[note_l_queue[i].freq];
+			f << lfreq_map[note_l_queue[i].n];
 			name = "";
-			name += lfreq_map[note_l_queue[i].freq];
+			name += lfreq_map[note_l_queue[i].n];
 			comb_l_num = 1;
-			if (note_l_queue[i].freq != note_l_queue[i+1].freq) {
+			if (note_l_queue[i].n != note_l_queue[i+1].n) {
 				for (size_t m = 0; m < tmp_l.size(); m++) {
 					tmp_l[m] = 0;
 				}
