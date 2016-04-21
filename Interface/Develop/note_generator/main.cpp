@@ -4,6 +4,9 @@
 #include <string>
 #include <list>
 #include <functional>
+#include <algorithm>
+#include <map>
+#include <notes.h>
 
 using namespace std;
 
@@ -27,32 +30,77 @@ string writer(string part1, string part2, string part3, string wr_name)
 	return part1 + wr_name + part2 + wr_name + part3;
 }
 
-int main()
+bool compareDur(const Notes & note1, const Notes & note2)
+{
+	return (note1.duration < note2.duration);
+}
+
+vector<struct Notes> breaker(vector<struct Notes> & queue)
+{
+
+	list<struct Notes> note_l;
+	struct Notes add_note;
+
+	list<float> note_timing;
+	for (size_t i = 0; i < queue.size(); i++ ) {
+		note_timing.push_back(queue[i].init_time);
+		note_timing.push_back(queue[i].init_time + queue[i].duration);
+	}
+	for (float bar = 1; bar <= 1000; bar++) {
+		note_timing.push_back(bar);
+	}
+	note_timing.sort();
+	note_timing.unique();
+
+	while(!queue.empty()) {
+		note_l.push_front(queue.back());
+		queue.pop_back();
+	}
+
+	for (auto it2 = note_timing.begin(); it2 != note_timing.end(); ++it2){
+		for (auto it1 = note_l.begin(); it1 != note_l.end(); ++it1 ) {
+			if ((it1->init_time < *it2)&&((it1->init_time + it1->duration) > *it2)) {
+				add_note.duration = it1->init_time + it1->duration - *it2;
+				add_note.init_time = *it2;
+				add_note.n = it1->n;
+
+				it1->duration = *it2 - it1->init_time;
+
+				note_l.insert(it1, add_note);
+			}
+		}
+	}
+
+	while (!note_l.empty()) {
+		queue.push_back(note_l.front());
+		note_l.pop_front();
+	}
+
+	sort(queue.begin(), queue.end());
+
+	return queue;
+
+}
+
+
+void drawNote(vector<struct Notes> & queue, ofstream & f)
 {
 	using namespace std::placeholders;
 
-	struct NoteFreq {
-		float note_freq;
-		string note_name;
-	};
+	map<int, string> freq_map;
 
-	list<NoteFreq> note_freq_list = {
-		{261.63,   "c'"}, {277.18, "cis'"},
-		{293.66,   "d'"}, {311.13, "dis'"},
-		{329.63,   "e'"}, {349.23,   "f'"},
-		{369.99, "fis'"}, {392.00,   "g'"},
-		{415.30, "gis'"}, {440.00,   "a'"},
-		{466.16, "ais'"}, {493.88,   "b'"},
-	};
-
-	list<NoteFreq> note_lfreq_list = {
-		{130.81,    "c"}, {138.59,  "cis"},
-		{146.83,    "d"}, {155.56,  "dis"},
-		{164.81,    "e"}, {174.61,    "f"},
-		{185.00,  "fis"}, {196.00,    "g"},
-		{207.65,  "gis"}, {220.00,    "a"},
-		{233.08,  "ais"}, {246.94,    "b"},
-	};
+	freq_map[25] =    "c"; freq_map[26] =  "cis";
+	freq_map[27] =    "d"; freq_map[28] =  "dis";
+	freq_map[29] =    "e"; freq_map[30] =    "f";
+	freq_map[31] =  "fis"; freq_map[32] =    "g";
+	freq_map[33] =  "gis"; freq_map[34] =    "a";
+	freq_map[35] =  "ais"; freq_map[36] =    "b";
+	freq_map[37] =   "c'"; freq_map[38] = "cis'";
+	freq_map[39] =   "d'"; freq_map[39] = "dis'";
+	freq_map[40] =   "e'"; freq_map[41] =   "f'";
+	freq_map[42] = "fis'"; freq_map[43] =   "g'";
+	freq_map[44] = "gis'"; freq_map[45] =   "a'";
+	freq_map[46] = "ais'"; freq_map[47] =   "b'";
 
 	struct NotePause {
 		float pause_dur;
@@ -82,7 +130,7 @@ int main()
 		{0.2500, std::bind(writer, "4 ",  "",    "",    _1)},
 		{0.3125, std::bind(writer, "4~ ", "16 ", "",    _1)},
 		{0.3750, std::bind(writer, "4. ", "",    "",    _1)},
-		{0.4375, std::bind(writer, "4 ",  "8. ", "",    _1)},
+		{0.4375, std::bind(writer, "4~ ", "8. ", "",    _1)},
 		{0.5000, std::bind(writer, "2 ",  "",    "",    _1)},
 		{0.5625, std::bind(writer, "2~ ", "16 ", "",    _1)},
 		{0.6250, std::bind(writer, "2~ ", "8 ",  "",    _1)},
@@ -94,141 +142,245 @@ int main()
 		{1.0000, std::bind(writer, "1 ",  "",    "",    _1)},
 	};
 
-	struct Notes
-	{
-		float freq;
-		int n;
-		float duration;
-		float init_time;
-	};
+	vector<int> tmp;
 
+	vector<int> freq_array;
+	int comb_num = 0;
+	bool first_pause = true;
+
+	for (unsigned int i = 0; i < queue.size(); )
+	{
+		string name = "< ";
+
+		const float bit = 0.03125;
+
+		for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
+			if (first_pause && near(it->pause_dur, queue[0].init_time, bit, bit)) {
+				f << it->pause_name;
+				first_pause = false;
+			}
+		}
+
+		int k = 0;
+		while (((i+k) < queue.size())&&
+			  (queue[i+k].init_time == queue[i].init_time)) {
+			freq_array.push_back(queue[i+k].n);
+			k++;
+		}
+		bool flag = true;
+		for (int m = 0; flag && m < k; m++) {
+			for (size_t n = 0; flag && n < tmp.size(); n++)	{
+				if (tmp[n] == freq_array[m]) {
+					f << "( ";
+					flag = false;
+				}
+			}
+		}
+		k = 0;
+		if (((i+k) < queue.size())&&
+					(queue[i].init_time == queue[i+1].init_time)) {
+			f << "< ";
+			while (((i+k) < queue.size())&&
+				  (queue[i].init_time == queue[i+k].init_time)) {
+				f << freq_map[queue[i+k].n];
+				f << " ";
+				name += freq_map[queue[i+k].n];
+				name += " ";
+				k++;
+			}
+			comb_num = k;
+			f << ">";
+			name += ">";
+			tmp = freq_array;
+		} else {
+			f << freq_map[queue[i].n];
+			name = "";
+			name += freq_map[queue[i].n];
+			comb_num = 1;
+			if (queue[i].n != queue[i+1].n) {
+				for (size_t m = 0; m < tmp.size(); m++) {
+					tmp[m] = 0;
+				}
+			} else {
+				tmp = freq_array;
+			}
+		}
+
+		if (queue[i].duration > 1) {
+			float full = 0;
+			while (queue[i].duration - full > 1) {
+				full++;
+				f << "1~ " + name;
+			}
+			for (auto it = note_dur_list.begin(); it != note_dur_list.end(); ++it) {
+				if (near(it->note_dur, queue[i].duration - full, bit, bit)) {
+					f << it->func(name);
+				}
+			}
+		} else {
+			for (auto it = note_dur_list.begin(); it != note_dur_list.end(); ++it) {
+				if (near(it->note_dur, queue[i].duration, bit, bit)) {
+					f << it->func(name);
+				}
+			}
+		}
+		if (flag == false) {
+			f << ") ";
+		}
+
+		float pause_taken = 0;
+		if ((int)(queue[i+comb_num].init_time) !=
+				(int)(queue[i].init_time + queue[i].duration)) {
+			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
+				if (near(it->pause_dur, 1 - queue[i].init_time
+						- queue[i].duration + (int)(queue[i].init_time
+							+ queue[i].duration), bit, bit)) {
+					f << it->pause_name;
+					pause_taken += 1 - queue[i].init_time - queue[i].duration
+						+ (int)(queue[i].init_time + queue[i].duration);
+				}
+			}
+			if (queue[i+comb_num].init_time - queue[i].init_time
+					- queue[i].duration - pause_taken > 1) {
+				float full = 1;
+				while (queue[i+comb_num].init_time - queue[i].init_time
+						- queue[i].duration - full - pause_taken > 1) {
+					full++;
+					f << "r1 ";
+				}
+				for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
+					if (near(it->pause_dur, queue[i+1].init_time
+							- (int)(queue[i+1].init_time), bit, bit)) {
+						f << it->pause_name;
+						for (size_t m = 0; m < tmp.size(); m++) {
+							tmp[m] = 0;
+						}
+					}
+				}
+			} else {
+				for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
+					if (near(it->pause_dur, queue[i+1].init_time
+							- queue[i].init_time - queue[i].duration - pause_taken, bit, bit)) {
+						f << it->pause_name;
+						for (size_t m = 0; m < tmp.size(); m++) {
+							tmp[m] = 0;
+						}
+					}
+				}
+			}
+		} else {
+			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
+				if (near(it->pause_dur, queue[i+comb_num].init_time
+						- queue[i].init_time - queue[i].duration, bit, bit)) {
+					f << it->pause_name;
+					for (size_t m = 0; m < tmp.size(); m++) {
+						tmp[m] = 0;
+					}
+				}
+			}
+		}
+
+		i = i + comb_num;
+	}
+}
+
+
+
+int main()
+{
 	Notes note_1;
-	note_1.freq = 261.63f;
-	note_1.n = 1;
-	note_1.duration = 0.25f;
+	note_1.n = 38;
+	note_1.duration = 0.4f;
 	note_1.init_time = 0.1;
 
 	Notes note_2;
-	note_2.freq = 493.88f;
-	note_2.n = 2;
-	note_2.duration = 0.88f;
-	note_2.init_time = 0.44;
+	note_2.n = 47;
+	note_2.duration = 1.16f;
+	note_2.init_time = 0.1;
 
 	Notes note_3;
-	note_3.freq = 130.81f;
-	note_3.n = 3;
-	note_3.duration = 0.25f;
-	note_3.init_time = 0.71;
+	note_3.n = 41;
+	note_3.duration = 0.16f;
+	note_3.init_time = 0.5;
+
+	Notes note_4;
+	note_4.n = 43;
+	note_4.duration = 3.5f;
+	note_4.init_time = 4.0;
+
+	Notes note_5;
+	note_5.n = 45;
+	note_5.duration = 2.68f;
+	note_5.init_time = 4.5;
+
+	Notes note_6;
+	note_6.n = 37;
+	note_6.duration = 0.25f;
+	note_6.init_time = 5.8;
+
+
+	Notes note_7;
+	note_7.n = 25;
+	note_7.duration = 0.25f;
+	note_7.init_time = 0;
+
+	Notes note_8;
+	note_8.n = 35;
+	note_8.duration = 3.3f;
+	note_8.init_time = 0.5;
+
+	Notes note_9;
+	note_9.n = 28;
+	note_9.duration = 1.0f;
+	note_9.init_time = 1.5;
 
 	vector<struct Notes> note_n_queue;
 	note_n_queue.push_back(note_1);
 	note_n_queue.push_back(note_2);
+	note_n_queue.push_back(note_3);
+	note_n_queue.push_back(note_4);
+	note_n_queue.push_back(note_5);
+	note_n_queue.push_back(note_6);
 	vector<struct Notes> note_l_queue;
-	note_l_queue.push_back(note_3);
+	note_l_queue.push_back(note_7);
+	note_l_queue.push_back(note_8);
+	note_l_queue.push_back(note_9);
+
+	breaker(note_n_queue);
+	breaker(note_l_queue);
 
 	ofstream f("E:/Programs/Lilypond/file.ly");
-		f << "normal = \\new Staff { \n";
 
-	for (unsigned int i = 0; i < note_n_queue.size(); i++)
-	{
-		string name;
-		const float bit = 0.03125;
-
-		if (note_n_queue[i].freq >= 261.63) {
-//Start pause
-////////////////////////////////////////
-			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-				if (near(it->pause_dur, note_n_queue[0].init_time, bit, bit)) {
-					f << it->pause_name;
-				}
-			}
-
-//Frequency
-////////////////////////////////////////
-			for (auto it = note_freq_list.begin(); it != note_freq_list.end(); ++it) {
-				if (it->note_freq == note_n_queue[i].freq) {
-					f << it->note_name;
-					name = it->note_name;
-				}
-			}
-
-//Duration
-////////////////////////////////////////
-			for (auto it = note_dur_list.begin(); it != note_dur_list.end(); ++it) {
-				if (near(it->note_dur, note_n_queue[i].duration, bit, bit)) {
-					f << it->func(name);
-				}
-			}
-
-
-//Pause
-////////////////////////////////////////
-
-			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-				if (near(it->pause_dur, note_n_queue[i+1].init_time - note_n_queue[i].duration, bit, bit)) {
-					f << it->pause_name;
-				}
-			}
-		} else {
-			;
-		}
+	f << "normal = \\new Staff { \n";
+	drawNote(note_n_queue, f);
+	int pause_n_counter = 0;
+	while ((int)(note_l_queue[note_l_queue.size()-1].init_time
+			+ note_l_queue[note_l_queue.size()-1].duration
+				- note_n_queue[note_n_queue.size()-1].init_time
+					- note_n_queue[note_n_queue.size()-1].duration) - pause_n_counter > 1) {
+		f << "r1 ";
+		pause_n_counter++;
 	}
-
 	f << "\n";
 	f << "}\n";
 
-	f << "bass = \\new Staff {\n";
+	f << "bass = \\new Staff { \n";
 	f << "\\clef \"bass\" \n";
-	for (unsigned int i = 0; i < note_l_queue.size(); i++)
-	{
-		string name;
-		const float bit = 0.03125;
-
-		if (note_l_queue[i].freq < 261.63) {
-//Start pause
-////////////////////////////////////////
-			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-				if (near(it->pause_dur, note_l_queue[0].init_time, bit, bit)) {
-					f << it->pause_name;
-				}
-			}
-
-//Frequency
-////////////////////////////////////////
-			for (auto it = note_lfreq_list.begin(); it != note_lfreq_list.end(); ++it) {
-				if (it->note_freq == note_l_queue[i].freq) {
-					f << it->note_name;
-					name = it->note_name;
-				}
-			}
-
-//Duration
-////////////////////////////////////////
-			for (auto it = note_dur_list.begin(); it != note_dur_list.end(); ++it) {
-				if (near(it->note_dur, note_l_queue[i].duration, bit, bit)) {
-					f << it->func(name);
-				}
-			}
-
-
-//Pause
-////////////////////////////////////////
-			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-				if (near(it->pause_dur, note_l_queue[i+1].init_time - note_l_queue[i].duration, bit, bit)) {
-					f << it->pause_name;
-				}
-			}
-		} else {
-			i--;
-		}
+	drawNote(note_l_queue, f);
+	int pause_l_counter = 0;
+	while ((int)(note_n_queue[note_n_queue.size()-1].init_time
+			+ note_n_queue[note_n_queue.size()-1].duration
+				- note_l_queue[note_l_queue.size()-1].init_time
+					- note_l_queue[note_l_queue.size()-1].duration) - pause_l_counter > 1) {
+		f << "r1 ";
+		pause_l_counter++;
 	}
+
 	f << "\n";
 	f << "}\n";
 
 	f << "{\n";
-	f << "\\override Score.BarLine.stencil = ##f \n";
-	f << "\\override Score.BarLine.allow-span-bar = ##f \n";
-	f << "<< \n";
+	f << "\\new PianoStaff << \n";
 	f << "\\normal \n";
 	f << "\\bass \n";
 	f << ">> \n";
