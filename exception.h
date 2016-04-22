@@ -7,16 +7,15 @@ class Exception
 {
 public:
     enum ErrType {
-        SAVE_FAIL,
-        OPEN_FAIL,
-        SEEK_FAIL,
-        EOF_SOON,
-        EREAD,
-        NO_FMT,
-        BAD_RIFF,
-        BAD_WAVE,
-        UNEXP_DEPTH,
-        NO_EMPTY_VECTOR
+        OPEN_FAIL,      //Failed to open file.
+        SEEK_FAIL,      //Failed to seek in file.
+        EOF_SOON,       //Found EOF too soon while reading file.
+        EREAD,          //Error while reading file.
+        NO_FMT,         //No fmt subchunk found.
+        BAD_RIFF,       //No RIFF label found.
+        BAD_WAVE,       //No WAVE label found.
+        UNEXP_DEPTH,    //Unexpected depth of sound.
+        NO_EMPTY_VECTOR //Vector given to fillVector is not empty.
     };
     Exception(ErrType errCode, string& errMessage) :
         errType(errCode),

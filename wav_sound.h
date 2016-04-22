@@ -92,7 +92,7 @@ private:
     RiffWaveHeader riffWaveHeader;
     FmtSubchunk fmtSubchunk;
     DataSubchunk dataSubchunk;
-    char* fileName_;
+    string fileName_;
     unsigned long seekToData;
 
     void fillVector(vector<float> &amplTime);
