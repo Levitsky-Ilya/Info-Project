@@ -57,12 +57,14 @@ int main() {
 	}
 
 	//Editing note window
-	auto noteWindowScrolledBox = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
+	auto noteWindowScrolledBox =
+			sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
 	noteWindowScrolledBox->Pack(noteImage, true, true);
 
 	auto noteWindowScrolled = sfg::ScrolledWindow::Create();
-	noteWindowScrolled->SetScrollbarPolicy(sfg::ScrolledWindow::HORIZONTAL_NEVER
-			| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
+	noteWindowScrolled->
+			SetScrollbarPolicy(sfg::ScrolledWindow::HORIZONTAL_NEVER
+				| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
 	noteWindowScrolled->SetRequisition(noteWindowScrolled_REQ);
 	noteWindowScrolled->AddWithViewport(noteWindowScrolledBox);
 
@@ -77,19 +79,23 @@ int main() {
 	noteWindow->Add(noteWindowBox);
 
 	//Editing song window
-	auto songWindowScrolledBox = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
+	auto songWindowScrolledBox =
+			sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
 	auto space = sfg::Label::Create(" ");
-	auto songPath = sfg::Label::Create("	C:/MyProgram/Music/MIPT/Main_Theme.wav");
+	auto songPath =
+			sfg::Label::Create("	C:/MyProgram/Music/MIPT/Main_Theme.wav");
 	songPath->SetRequisition(SONG_PATH_REQ);
 	auto loadButton = sfg::Button::Create("LOAD");
 	loadButton->SetId("loadButton");
-	//font size set below after setting font size for every button to be BUTTON_FONT_SIZE
+	//font size set below after setting font size
+	//for every button to be BUTTON_FONT_SIZE
 	auto space_ = sfg::Label::Create(" ");
 	auto songPath_ = sfg::Label::Create("	C:/MyProgram/Music/BATAREYKA.wav");
 	songPath_->SetRequisition(SONG_PATH_REQ);
 	auto loadButton_ = sfg::Button::Create("LOAD");
 	loadButton_->SetId("loadButton");
-	//font size set below after setting font size for every button to be BUTTON_FONT_SIZE
+	//font size set below after setting font size
+	//for every button to be BUTTON_FONT_SIZE
 
 	auto song_table = sfg::Table::Create();
 	song_table->Attach(space,
@@ -127,8 +133,9 @@ int main() {
 	songWindowScrolledBox->Pack(song_table);
 
 	auto songWindowScrolled = sfg::ScrolledWindow::Create();
-	songWindowScrolled->SetScrollbarPolicy(sfg::ScrolledWindow::HORIZONTAL_AUTOMATIC
-			| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
+	songWindowScrolled->
+			SetScrollbarPolicy(sfg::ScrolledWindow::HORIZONTAL_AUTOMATIC
+				| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
 	songWindowScrolled->SetRequisition(SONG_WINDOW_SCR_REQ);
 	songWindowScrolled->AddWithViewport(songWindowScrolledBox);
 
@@ -145,7 +152,8 @@ int main() {
 	//Editing main window
 	auto box = sfg::Box::Create(sfg::Box::Orientation::VERTICAL);
 
-	auto label = sfg::Label::Create("  Please type your file path and press 'LOAD':");
+	auto label =
+			sfg::Label::Create("  Please type your file path and press 'LOAD':");
 
 	auto entry = sfg::Entry::Create("File path...");
 	entry->SetRequisition(ENTRY_REQ);
