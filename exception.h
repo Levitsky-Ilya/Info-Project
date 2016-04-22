@@ -9,13 +9,14 @@ public:
     enum ErrType {
         SAVE_FAIL,
         OPEN_FAIL,
+        SEEK_FAIL,
         EOF_SOON,
         EREAD,
+        NO_FMT,
         BAD_RIFF,
         BAD_WAVE,
-        BAD_FMT,
-        BAD_DATA,
-        UNEXP_DEPTH
+        UNEXP_DEPTH,
+        NO_EMPTY_VECTOR
     };
     Exception(ErrType errCode, string& errMessage) :
         errType(errCode),
