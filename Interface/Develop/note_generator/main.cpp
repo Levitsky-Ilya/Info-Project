@@ -62,7 +62,7 @@ vector<struct Notes> breaker(vector<struct Notes> & queue)
 			if ((it1->initTime < *it2)&&((it1->initTime + it1->duration) > *it2)) {
 				noteAdded.duration = it1->initTime + it1->duration - *it2;
 				noteAdded.initTime = *it2;
-				noteAdded.nNote = it1->n;
+				noteAdded.nNote = it1->nNote;
 
 				it1->duration = *it2 - it1->initTime;
 
