@@ -28,7 +28,8 @@ int main() {
 
 
 	// Create the main SFML window
-	sf::RenderWindow appWindow(BASE_SIZE, "My program", sf::Style::Titlebar | sf::Style::Close);
+	sf::RenderWindow appWindow(BASE_SIZE, "My program",
+			sf::Style::Titlebar | sf::Style::Close);
 
 	// We have to do this because we don't use SFML to draw.
 	appWindow.resetGLStates();
@@ -60,7 +61,8 @@ int main() {
 	noteWindowScrolledBox->Pack(noteImage, true, true);
 
 	auto noteWindowScrolled = sfg::ScrolledWindow::Create();
-	noteWindowScrolled->SetScrollbarPolicy( sfg::ScrolledWindow::HORIZONTAL_NEVER | sfg::ScrolledWindow::VERTICAL_AUTOMATIC );
+	noteWindowScrolled->SetScrollbarPolicy(sfg::ScrolledWindow::HORIZONTAL_NEVER
+			| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
 	noteWindowScrolled->SetRequisition(noteWindowScrolled_REQ);
 	noteWindowScrolled->AddWithViewport(noteWindowScrolledBox);
 
@@ -125,7 +127,8 @@ int main() {
 	songWindowScrolledBox->Pack(song_table);
 
 	auto songWindowScrolled = sfg::ScrolledWindow::Create();
-	songWindowScrolled->SetScrollbarPolicy(sfg::ScrolledWindow::HORIZONTAL_AUTOMATIC | sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
+	songWindowScrolled->SetScrollbarPolicy(sfg::ScrolledWindow::HORIZONTAL_AUTOMATIC
+			| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
 	songWindowScrolled->SetRequisition(SONG_WINDOW_SCR_REQ);
 	songWindowScrolled->AddWithViewport(songWindowScrolledBox);
 
