@@ -20,28 +20,29 @@
 
 using namespace std;
 
-struct WavHeader
+const long SIZE_OF_CHUNKID = 4;
+
+struct RiffWaveHeader
 {
-    // WAV-format begin with RIFF-header:
+    /** WAV-format begin with RIFF-header. **/
 
     // Containes symbols "RIFF" in ASCII.
-    // (0x52494646 in big-endian)
-    char chunkId[4];
+    char chunkId[SIZE_OF_CHUNKID];
 
     // Size of file counting after this parameter.
     unsigned long chunkSize;
 
-    /* Containes symbols "WAVE" in ASCII.
-     * (0x57415645 в big-endian)
-     */
-    char format[4];
+    // Containes symbols "WAVE" in ASCII.
+    char format[SIZE_OF_CHUNKID];
 
-/** Format "WAVE" consists of 2 subchunks: "fmt " & "data": **/
+/** Format "WAVE" consists of subchunks. **/
+};
 
-/** First subchunk - fmt; declares format of audio data. **/
-    char subchunk1Id[4];          // Containes symbols "fmt" (0x666d7420)
+struct FmtSubchunk
+{
+    /** FmtSubchunk begins with "fmt " symbols **/
+    //char subchunk1Id[SIZE_OF_CHUNKID];          // Containes symbols "fmt "
 
-    // Size of subchunk, beginning right after this (16 for PCM).
     unsigned long subchunk1Size;
 
     unsigned short audioFormat;
@@ -50,17 +51,21 @@ struct WavHeader
 
     unsigned long sampleRate;
 
-    unsigned long byteRate;       // sampleRate * numChannels * bitsPerSample/8
+    unsigned long byteRate;
+
+    // sampleRate * numChannels * bitsPerSample/8
 
     // numChannels * bitsPerSample/8
     // Number of bytes in 1 sample, including all channels.
     unsigned short blockAlign;
 
     unsigned short bitsPerSample; // ("Depth" of sounding).
+};
 
-/** Second subchunk - data; containes audio data and size. **/
-
-    char subchunk2Id[4];          // Containes symbols "data" (0x64617461)
+struct DataSubchunk
+{
+    /** DataSubchunk begins with "data" symbols **/
+    //char subchunk2Id[SIZE_OF_CHUNKID];          // Containes symbols "data" (0x64617461)
 
     // Amount of bytes in data area.
     unsigned long subchunk2Size;
@@ -84,13 +89,16 @@ public:
 
 private:
     FILE* file;
-    WavHeader header;
+    RiffWaveHeader riffWaveHeader;
+    FmtSubchunk fmtSubchunk;
+    DataSubchunk dataSubchunk;
     char* fileName_;
-    float AllDurationSeconds;
+    unsigned long seekToData;
 
     void fillVector(vector<float> &amplTime);
     float strtoampl(const char* str, const unsigned short depth);
 
+    float AllDurationSeconds;
     int DurationMinutes;
     float DurationSeconds;
 };

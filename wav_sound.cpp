@@ -13,6 +13,9 @@
 
 #define DEBUG 0     //Set to 1 to display info while scanning the file
 #define TIME 0      //Set to 1 to measure time spent on scanning
+#define SHOW_AMPLITUDES 0
+
+#include "exception.h"
 
 /** WavFile header*/
 #include "wav_sound.h"
@@ -30,6 +33,7 @@
  * is measured.
  */
 #include <chrono>
+#include <new>          //bad_alloc
 
 #include <math.h>       //ceil, floor.
 #include <windows.h>    //included for mapping. Not used yet
@@ -38,11 +42,7 @@ using namespace std;
 
 const int BITS_IN_BYTE = 8;
 const int SECONDS_IN_MINUTE = 60;
-const int PAGE_SIZE = 4096;
-const int THREE_QUART_PAGE_SIZE = 3072;
-
-//Try to use mapping!!
-//CreateFileMapping(file, NULL, PAGE_READONLY, 0, subchunk2Size, NULL)
+const long SIZE_OF_LONG = sizeof(unsigned long);
 
 /** Constructor **/
 WavFile::WavFile (const char* fileName)
@@ -53,85 +53,187 @@ WavFile::WavFile (const char* fileName)
     err = strcpy_s(fileName_, strlen(fileName) + 1, fileName);
     if (err)
     {
-      cout << "Failed save filename \"" << fileName << "\" , error " << err << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+      /* Not sure which way is better
+      string msg;
+      char* strerr = new char[20]
+      itoa(err, strerr, 10);
+      string msg += "Failed save filename \"";
+      string msg += fileName;
+      string msg += "\" , error ";
+      string msg += strerr;
+      delete [] strerr;
+      */
+      char* msg = new char[40+255+20]; ///THIS exact numbers? define them!!!
+      sprintf(msg, "Failed to save filename \"%s\", error %d", fileName, err);
+      string msgstr = msg;
+      throw Exception(Exception::SAVE_FAIL, msgstr);
     }
     err = fopen_s(&file, fileName, "rb");
     if (err)
     {
-      cout << "Failed open file" << fileName << " , error " << err << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+        char* msg = new char[40+255+20];
+        sprintf(msg, "Failed to open filename \"%s\", error %d", fileName, err);
+        string msgstr = msg;
+        throw Exception(Exception::OPEN_FAIL, msgstr);
     }
 
     /* Reads header of .wav file, converts to struct WavHeader. */
-    err = fread(&header, sizeof(WavHeader), 1, file);
+    err = fread(&riffWaveHeader, sizeof(RiffWaveHeader), 1, file);
     if (err != 1) {
+      char* msg = new char[40+255+20];
       if(feof(file)) {
-        cout << "EOF met too soon." << endl;
+        sprintf(msg, "EOF met too soon.");
+        string msgstr = msg;
+        throw Exception(Exception::EOF_SOON, msgstr);
       } else {
-        cout << "Undefined error while reading file." << endl;
+        sprintf(msg, "Undefined error (%d) while reading file.", err);
+        string msgstr = msg;
+        throw Exception(Exception::EREAD, msgstr);
         /** Can/Should we define?!!! */
       }
-      system("pause");
-      exit(EXIT_FAILURE);
     }
 
-    /* Checking whether is Wav file or not. TRY TO throw exception if fault.*/
-    if(strnicmp(header.chunkId, "RIFF", sizeof(header.chunkId)) != 0) {
-      cout << sizeof(header.chunkId) << endl;
-      cout << "Is not RIFF sequence. (" << header.chunkId << ")" << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+    if(strnicmp(riffWaveHeader.chunkId, "RIFF",
+                sizeof(riffWaveHeader.chunkId)) != 0)
+    {
+      char* msg = new char[40+255+20];
+      sprintf(msg, "Is not RIFF sequence. (%s)", (riffWaveHeader.chunkId));
+      string msgstr = msg;
+      throw Exception(Exception::BAD_RIFF, msgstr);
     }
-    if(strnicmp(header.format, "WAVE", sizeof(header.format)) != 0) {
-      cout << "Is not WAVE format. (" << header.format << ")" << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+    if(strnicmp(riffWaveHeader.format, "WAVE",
+                sizeof(riffWaveHeader.format)) != 0)
+    {
+      char* msg = new char[40+255+20];
+      sprintf(msg, "Is not WAVE format. (%s)", (riffWaveHeader.format));
+      string msgstr = msg;
+      throw Exception(Exception::BAD_WAVE, msgstr);
     }
-    if(strnicmp(header.subchunk1Id, "fmt ", sizeof(header.subchunk1Id)) != 0) {
-      cout << "Couldn't find fmt subchunk, found:"
-              " (" << header.subchunk1Id << ")" << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+
+    char* subchunkId = new char[SIZE_OF_CHUNKID];
+    unsigned long subchunkSize;
+    unsigned long subchunk2Size;
+    bool reashedFmt = false;
+    bool reashedData = false;
+
+    seekToData = sizeof(RiffWaveHeader);
+
+    while(!reashedData) {
+        fread(subchunkId, SIZE_OF_LONG, 1, file);
+#if DEBUG
+        cout << endl << "subchunkId : "
+             << subchunkId[0]
+             << subchunkId[1]
+             << subchunkId[2]
+             << subchunkId[3] << "." << endl;
+#endif
+        if(strnicmp(subchunkId, "fmt ", SIZE_OF_CHUNKID) == 0)
+        {
+            fread(&fmtSubchunk, sizeof(FmtSubchunk), 1, file);
+#if DEBUG
+            cout << "FMT" << endl;
+            cout << "  subchunk1Size: " << fmtSubchunk.subchunk1Size << endl;
+            cout << "  audioFormat: "   << fmtSubchunk.audioFormat   << endl;
+            cout << "  numChannels: "   << fmtSubchunk.numChannels   << endl;
+            cout << "  sampleRate: "    << fmtSubchunk.sampleRate    << endl;
+            cout << "  byteRate: "      << fmtSubchunk.byteRate      << endl;
+            cout << "  blockAlign: "    << fmtSubchunk.blockAlign    << endl;
+            cout << "  bitsPerSample: " << fmtSubchunk.bitsPerSample << endl;
+            system("pause");
+#endif
+            err = fseek(file, fmtSubchunk.subchunk1Size - 16, SEEK_CUR);
+            if (err)
+            {
+                char* msg = new char[40+255+20];
+                sprintf(msg, "Fseek error %d in fmt.", err);
+                string msgstr = msg;
+                throw Exception(Exception::SEEK_FAIL, msgstr);
+            }
+            seekToData += fmtSubchunk.subchunk1Size;
+            reashedFmt = true;
+        } else
+        if(strnicmp(subchunkId, "data", SIZE_OF_CHUNKID) == 0)
+        {
+            if (!reashedFmt)
+            {
+                char* msg = new char[40+255+20];
+                sprintf(msg, "No fmt subchunk found before data.");
+                string msgstr = msg;
+                throw Exception(Exception::NO_FMT, msgstr);
+            }
+            DataSubchunk dataSubchunk;
+            fread(&dataSubchunk, sizeof(DataSubchunk), 1, file);
+
+            subchunk2Size = dataSubchunk.subchunk2Size;
+            reashedData = true;
+#if DEBUG
+            cout << "DATA" << endl;
+            cout << " subchunk2Size: " << subchunk2Size << endl;
+            cout << " seekToData: "
+                 << seekToData + SIZE_OF_CHUNKID + SIZE_OF_LONG << endl;
+            system("pause");
+#endif
+        } else {
+            fread(&subchunkSize, sizeof(unsigned long), 1, file);
+#if DEBUG
+            cout << "subchunkSize: " << subchunkSize << endl;
+            system("pause");
+#endif
+            err = fseek(file, subchunkSize, SEEK_CUR);
+            if (err)
+            {
+                char* msg = new char[40+255+20];
+                sprintf(msg, "Fseek error %d in some subchunk.", err);
+                string msgstr = msg;
+                throw Exception(Exception::SEEK_FAIL, msgstr);
+            }
+            seekToData += subchunkSize;
+        }
+        seekToData += (SIZE_OF_CHUNKID + SIZE_OF_LONG);
     }
+
+    //cout << seeking << " " << header.chunkSize << endl;
+    fseek(file, subchunk2Size - 10, SEEK_CUR);
+
+    /*
     if(strnicmp(header.subchunk2Id, "data",  sizeof(header.subchunk2Id)) != 0) {
-      cout << "Could not find data subchunk, found:"
-              " (" << header.subchunk2Id << ")" << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+      char* msg = new char[40+255+20];
+      sprintf(msg, "Couldn't find data subchunk, found: (%s)", header.subchunk2Id);
+      string msgstr = msg;
+      throw Exception(Exception::BAD_DATA, msgstr);
     }
+    */
     
     /* Calculating duration of playing in min:sec. */
-    AllDurationSeconds = 1.0f * header.subchunk2Size
-                             /(header.bitsPerSample / BITS_IN_BYTE)
-                             / header.numChannels / header.sampleRate;
+    AllDurationSeconds = 1.0f * dataSubchunk.subchunk2Size
+                             /(fmtSubchunk.bitsPerSample / BITS_IN_BYTE)
+                             / fmtSubchunk.numChannels / fmtSubchunk.sampleRate;
     DurationMinutes = (int)floor(AllDurationSeconds) / SECONDS_IN_MINUTE;
     DurationSeconds = AllDurationSeconds - (DurationMinutes * SECONDS_IN_MINUTE);
 
     fclose(file);
+    delete [] subchunkId;
 }
 
 /** Destructor **/
 WavFile::~WavFile ()
 {
-    delete fileName_;
+    delete [] fileName_;
 }
 
 unsigned short WavFile::getRate()
 {
-    return header.sampleRate;
+    return fmtSubchunk.sampleRate;
 }
 
 unsigned short WavFile::getChannels()
 {
-    return header.numChannels;
+    return fmtSubchunk.numChannels;
 }
 
 unsigned short WavFile::getbitsPerSample()
 {
-    return header.bitsPerSample;
+    return fmtSubchunk.bitsPerSample;
 }
 
 /** This version of getAmplitudeArray(..) is single threaded.
@@ -192,14 +294,14 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
     start = chrono::system_clock::now();
 #endif
 
-    if(header.bitsPerSample % BITS_IN_BYTE != 0 ||
-       header.bitsPerSample > sizeof(int) * BITS_IN_BYTE ||
-       header.bitsPerSample < sizeof(char) * BITS_IN_BYTE)
+    if(fmtSubchunk.bitsPerSample % BITS_IN_BYTE != 0 ||
+       fmtSubchunk.bitsPerSample > sizeof(int) * BITS_IN_BYTE ||
+       fmtSubchunk.bitsPerSample < sizeof(char) * BITS_IN_BYTE)
     {
-        //Throw exception if maxAmplitude == 0xff and depth !=8 ????
-       cout << "Unexpected depth of sounding: "
-            << header.bitsPerSample << endl;
-        exit(EXIT_FAILURE);
+      char* msg = new char[40+255+20];
+      sprintf(msg, "Unexpected depth of sounding: %d", fmtSubchunk.bitsPerSample);
+      string msgstr = msg;
+      throw Exception(Exception::UNEXP_DEPTH, msgstr);
     }
 
     fillVector(amplTime);
@@ -220,71 +322,56 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
  */
 void WavFile::fillVector (vector<float> &amplTime)
 {
+    long sizeOfVector = amplTime.size();
+    if (sizeOfVector != 0)
+    {
+        char* msg = new char[40+255+20];
+        sprintf(msg, "Not empty vector given to fillVector,"
+                     "it has size %ld", sizeOfVector);
+        string msgstr = msg;
+        throw Exception(Exception::NO_EMPTY_VECTOR, msgstr);
+    }
     errno_t err;
     err = fopen_s(&file, fileName_, "rb");
     if (err)
     {
-      cout << "Failed open file" << fileName_ << " , error " << err << endl;
-      system("pause");
-      exit(EXIT_FAILURE);
+        char* msg = new char[40+255+20];
+        sprintf(msg, "fillVector failed to open filename \"%s\", error %d",
+                fileName_, err);
+        string msgstr = msg;
+        throw Exception(Exception::OPEN_FAIL, msgstr);
     }
 
-    fseek(file, sizeof(WavHeader), SEEK_SET);
+    err = fseek(file, seekToData, SEEK_SET);
+    if (err)
+    {
+        char* msg = new char[40+255+20];
+        sprintf(msg, "Fseek error %d when seeked to data in fillVector", err);
+        string msgstr = msg;
+        throw Exception(Exception::SEEK_FAIL, msgstr);
+    }
 
-    unsigned short depth = header.bitsPerSample;
-    unsigned short pageSize = (depth == 24? THREE_QUART_PAGE_SIZE : PAGE_SIZE);
+    unsigned short depth = fmtSubchunk.bitsPerSample;
 
-    char* buff = new char[pageSize];
-    unsigned long sizeOfFile = header.subchunk2Size;
-    unsigned long pagesTotal = sizeOfFile / pageSize;
-    unsigned long sizeOfFileRemainder = sizeOfFile % pageSize;
-    unsigned long blockAlign = header.blockAlign;
-
-#if DEBUG
-    cout << "DEBUG" << endl;
-    cout << "depth: " << depth << endl;
-    cout << "pageSize: " << pageSize << endl;
-    cout << "sizeOfFile: " << sizeOfFile << endl;
-    cout << "pagesTotal: " << pagesTotal << endl;
-    cout << "sizeOfFileRemainder: " << sizeOfFileRemainder << endl;
-    cout << "blockAlign: " << blockAlign << endl << endl;
-    system("pause");
-#endif
+    unsigned long sizeOfData = dataSubchunk.subchunk2Size;
+    char* buff = new char[sizeOfData];
+    unsigned long blockAlign = fmtSubchunk.blockAlign;
 
     float tmpAmplitude;
-    for(unsigned long page = 0; page < pagesTotal; page++)
-    {
-      fread(buff, pageSize, 1, file);
-      /* Reading only first channel. */
-      for(unsigned long i = 0; i < pageSize; i += blockAlign) {
-#if DEBUG
-        cout << "Page " << page << " out of " << pagesTotal << ".\t";
-        cout << "At " << i << " out of " << pageSize  << ".\t";
+    fread(buff, sizeOfData, 1, file);
+    /* Reading only first channel. */
+    for(unsigned long i = 0; i < sizeOfData; i += blockAlign) {
+#if SHOW_AMPLITUDES
+      cout << "At " << i << " out of " << sizeOfData  << ".\t";
 #endif
 
-        tmpAmplitude = strtoampl(buff + i, depth); //Good buff + i???
-        amplTime.push_back(tmpAmplitude);
+      tmpAmplitude = strtoampl(buff + i, depth); //Good buff + i???
+      amplTime.push_back(tmpAmplitude);
 
-#if DEBUG
-        cout << tmpAmplitude << endl;
+#if SHOW_AMPLITUDES
+      cout << tmpAmplitude << endl;
 #endif
-      }
     }
-    /* Read remaining part of file less then a page*/
-    if(sizeOfFileRemainder != 0)
-      fread(buff, sizeOfFileRemainder, 1, file);
-      for(unsigned long i = 0; i < sizeOfFileRemainder; i += blockAlign) {
-#if DEBUG
-        cout << "At " << i << " out of " << sizeOfFileRemainder  << ".\t";
-#endif
-
-        tmpAmplitude = strtoampl(buff + i, depth);
-        amplTime.push_back(tmpAmplitude);
-
-#if DEBUG
-        cout << tmpAmplitude << endl;
-#endif
-      }
     fclose(file);
     delete [] buff;
 }
@@ -292,22 +379,19 @@ void WavFile::fillVector (vector<float> &amplTime)
 /** Additional method to print content of vector*/
 void WavFile::dumpVector(vector<float> amplTime)
 {
-    cout << "Elemets in vector: " << amplTime.size() << endl;
+    long sizeOfVector = amplTime.size();
+    cout << "*** DUMP VECTOR ***" << endl;
+    cout << "Elemets in vector: " << sizeOfVector << endl;
     cout << "Input No to display this element from vector." << endl;
     cout << "Enter negative No to exit." << endl;
-    system("pause");
-    /*
-    for (vector<float>::iterator it = amplTime.begin();
-         it != amplTime.end();
-         it++)
-    {
-      cout << *it << '\t';
-    }
-    */
+
     long i;
     cin >> i;
     while (i >= 0) {
-        cout << amplTime[i] << endl;
+        if (i < sizeOfVector)
+          cout << amplTime[i] << endl;
+        else
+          cout << "Too big No. Elements total: " << sizeOfVector << endl;
         cin >> i;
     }
 }
@@ -333,7 +417,7 @@ float WavFile::strtoampl(const char* str, const unsigned short depth)
     if (a.amplitude > maxAmplitude)
        a.amplitude -= 2*maxAmplitude;   //simulating setting negative bit
 
-#if DEBUG
+#if SHOW_AMPLITUDES
     cout << a.data[0] << '.' <<
             a.data[1] << '.' <<
             a.data[2] << '.' <<
