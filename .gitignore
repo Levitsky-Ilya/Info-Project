@@ -48,4 +48,10 @@ Temporary Items
 
 # Custom settings
 *.user
-
+*.pro
+TestWAVes
+readtitle
+README.md
+Mediator1.cpp
+.gitignore
+Interface
