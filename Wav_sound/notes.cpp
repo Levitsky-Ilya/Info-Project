@@ -229,7 +229,8 @@ void Notes::Block::indentifyPeaks(unsigned int nTime)
 void Notes::checkPeaks(unsigned int nTime)
 {
     for (int i = 0; i < NUMBER_OF_BLOCKS - 1; i++) {
-        assert(nTime < blocks[i].block.size());
+        assert((nTime >> i) < blocks[i].block.size() &&
+               (nTime >> (i+1)) < blocks[i+1].block.size());
 
         if (blocks[i].block[nTime >> i][blocks[i].firstNote] == -INFINITY) {
             blocks[i+1].block[nTime >> (i+1)][blocks[i+1].lastNote] = -INFINITY;
