@@ -25,12 +25,22 @@ const int NOTE_C[NUMBER_OF_BLOCKS] = {24, 12, 0};
 
 #define DUMP_BEFORE_PEAKS 1 // type 1 to dump before selection peaks to dump.txt
 
-Notes::Notes(const char *fileName)
+Notes::Notes()
 {
     for (int i = 0; i < NUMBER_OF_NOTES - 1; i++) {
         initDiffFreq[i] = initNotes[i+1] - initNotes[i];
     }
 
+    for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+        blocks[i].diffFreq = 0.0;
+        blocks[i].firstNote = 0;
+        blocks[i].frameSize = 0;
+        blocks[i].lastNote = 0;
+    }
+}
+
+void Notes::initialize(const char *fileName)
+{
     WavFile melody(fileName);
     melody.getAmplitudeArray(amplTime);
 

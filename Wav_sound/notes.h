@@ -48,7 +48,8 @@ struct AmplNotes
 class Notes
 {
 public:
-    Notes(const char* fileName);
+    Notes();
+    void initialize(const char* fileName);
     void generateMidView(vector<Note>& notesOut);
 
     void dump(ostream& fout);
