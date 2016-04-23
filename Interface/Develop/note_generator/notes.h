@@ -3,16 +3,16 @@
 
 struct Notes
 {
-	int n;
+	int nNote;
 	float duration;
-	float init_time;
+	float initTime;
 
 	bool operator< (const Notes & rhs) {
-		return (init_time == rhs.init_time ?
+		return (initTime == rhs.initTime ?
 					duration == rhs.duration ?
-						n < rhs.n :
+						nNote < rhs.nNote :
 						duration < rhs.duration :
-					init_time < rhs.init_time
+					initTime < rhs.initTime
 				);
 	}
 };
