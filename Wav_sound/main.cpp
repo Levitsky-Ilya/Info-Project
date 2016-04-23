@@ -1,5 +1,7 @@
 #include <iostream>
 #include "notes.h"
+#include "../exception.h"
+#include "../exceptions.h"
 #include <fstream>
 
 //using namespace std;
@@ -7,10 +9,27 @@
 int main()
 {
     Notes perem;
-    perem.initialize("C:\\Users\\Admin\\Downloads\\sounds\\Am-C7-Em-chiptune.wav");
-    //Notes perem("C:\\InfoProject\\Info-Project\\piano_A3.wav");
+    try {
+    //perem.initialize("C:\\Users\\Admin\\Downloads\\sounds\\Am-C7-Em-chiptune.wav");
+    perem.initialize("C:\\InfoProject\\Info-Project\\piano_A3.wav");
+    } catch (NotesExceptions::Connect &e) {
+        cout << e.what() << endl;
+        return 0;
+    } catch (Exception &e) {
+        cout << e.getErrorMessage() << endl;
+        return 0;
+    } catch (...) {
+        cout << "Sorry, failed initialize. That's all." << endl;
+        return 0;
+    }
+
     vector<Note> a;
+    try {
     perem.generateMidView(a);
+    } catch (...) {
+        cout << "Сan't generate any notes. Sorry" << endl;
+        return 0;
+    }
 
     ofstream fout("mainDump.txt");
 
