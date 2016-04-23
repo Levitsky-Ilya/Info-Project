@@ -18,7 +18,6 @@
 
 #define NUMBER_OF_BLOCKS 3 // type 4 to use four blocks
 
-//const int NUMBER_OF_BLOCKS = 3; // or 4, I'll define later
 const float PEAK_MINIMUM = 20.0; /// attention!!! I can't define the lavel of silence now!
 const float DELTA_PEAK = 1.0; /// attention!!!
 
@@ -49,7 +48,8 @@ struct AmplNotes
 class Notes
 {
 public:
-    Notes(const char* fileName);
+    Notes();
+    void initialize(const char* fileName);
     void generateMidView(vector<Note>& notesOut);
 
     void dump(ostream& fout);
@@ -61,14 +61,11 @@ private:
         unsigned int frameSize;
         int firstNote;
         int lastNote;
-        int outNum;
         float diffFreq;
         //TypeFrame typeFrame;
 
-        void execute(const vector<float> & amplTime,
-                     const float* const delta);
+        void execute(const vector<float> & amplTime);
         void freqToNote(const float* const outFft,
-                        const float* const delta,
                         AmplNotes & notes);
         void keepOnlyPeaks(int nTime);
         void peaksToNotes(vector<Note>& notes);
@@ -76,7 +73,6 @@ private:
     };
 
     float initDiffFreq[NUMBER_OF_NOTES - 1];
-    float initDeltaFreq[NUMBER_OF_NOTES - 1];
 
     vector<float> amplTime;
     Block blocks[NUMBER_OF_BLOCKS];
