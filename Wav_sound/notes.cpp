@@ -13,9 +13,13 @@
  **/
 
 #include "notes.h"
+#include "../exceptions.h"
+
 #include <thread>
 #include <assert.h>
+#include <iostream>
 #include <fstream>
+#include <sstream>
 
 #if NUMBER_OF_BLOCKS == 4
 const int NOTE_C[NUMBER_OF_BLOCKS] = {36, 24, 12, 0};
@@ -39,12 +43,17 @@ Notes::Notes()
     }
 }
 
-void Notes::initialize(const char *fileName)
+void Notes::initialize(string fileName)
 {
-    WavFile melody(fileName);
-    melody.getAmplitudeArray(amplTime);
-
+    WavFile melody(fileName.c_str());
     int sampleRate = melody.getRate();
+
+    if (sampleRate == 0) {
+        string msg = "Failed to read hiders of file: " + fileName;
+        throw NotesExceptions::Connect(msg);
+    }
+
+    melody.getAmplitudeArray(amplTime);
     unsigned int frameSize = 1;
     int firstNote = 0;
     //int channels = melody.getChannels();
@@ -94,11 +103,14 @@ void Notes::generateMidView(vector<Note>& notesOut)
 
 #if DUMP_BEFORE_PEAKS
     ofstream fout("dump.txt");
-    dump(fout);
+    if (! dump(fout)) {
+        cout << "Some problem with damping a file before indentifying pesks";
+        cout << endl;
+    }
     fout.close();
 #endif
 
-    keepOnlyPeaks();
+    indentifyPeaks();
 
     notesFromPeaks(notesOut);
 
@@ -157,17 +169,17 @@ void Notes::Block::freqToNote(const float * const outFft,
     return;
 }
 
-void Notes::keepOnlyPeaks()
+void Notes::indentifyPeaks()
 {
-    int size = blocks[0].block.size();
-    for (int i = 0; i < size; i++) {
+    unsigned int size = blocks[0].block.size();
+    for (unsigned int i = 0; i < size; i++) {
 
         //after this cycle there is may be a conflict between
         //first note of current block
         //and last notes of elder block
         for (int j = 0; j < NUMBER_OF_BLOCKS; j++) {
             if (i % (1 << j) == 0) {
-                blocks[j].keepOnlyPeaks(i >> j);
+                blocks[j].indentifyPeaks(i >> j);
             }
         }
         //because of it I solve this problem there:
@@ -175,7 +187,19 @@ void Notes::keepOnlyPeaks()
     }
 }
 
-void Notes::Block::keepOnlyPeaks(int nTime)
+void Notes::Block::indentifyPeaks(unsigned int nTime)
+{
+    assert(nTime < block.size());
+
+    for (int i = lastNote; i >= firstNote; i--) {
+        if (block[nTime][i] <= PEAK_MINIMUM ||
+                block[nTime][i] < block[nTime].maxAmpl - DELTA_PEAK) {
+            block[nTime][i] = -INFINITY;
+        }
+    }
+}
+
+/*void Notes::Block::keepOnlyPeaks(int nTime)
 {
     if (block[nTime][lastNote] <= PEAK_MINIMUM ||
             block[nTime][lastNote] < block[nTime].maxAmpl - DELTA_PEAK ||
@@ -200,14 +224,19 @@ void Notes::Block::keepOnlyPeaks(int nTime)
         }
     }
 }
+*/
 
-void Notes::checkPeaks(int nTime)
+void Notes::checkPeaks(unsigned int nTime)
 {
     for (int i = 0; i < NUMBER_OF_BLOCKS - 1; i++) {
+        assert(nTime < blocks[i].block.size());
+
         if (blocks[i].block[nTime >> i][blocks[i].firstNote] == -INFINITY) {
             blocks[i+1].block[nTime >> (i+1)][blocks[i+1].lastNote] = -INFINITY;
         }
-        if (blocks[i+1].block[nTime >> (i+1)][blocks[i+1].lastNote] == -INFINITY) {
+        if (blocks[i+1].block[nTime >> (i+1)][blocks[i+1].lastNote] ==
+                -INFINITY) {
+
             blocks[i].block[nTime >> i][blocks[i].firstNote] = -INFINITY;
         }
     }
@@ -235,7 +264,7 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
         blocks[i].peaksToNotes(notes[i].noteBlock);
     }*/
 
-    int outSize = 0;
+    unsigned int outSize = 0;
 
     for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
         notes[i].current = 0;
@@ -245,7 +274,7 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
 
     notesOut.resize(outSize);
 
-    for (int i = 0; i < outSize; i++) {
+    for (unsigned int i = 0; i < outSize; i++) {
         int a = minBlock(notes);
         notesOut[i] = notes[a].noteBlock[notes[a].current];
         //notesOut.push_back(notes[a].noteBlock[notes[a].current]);
@@ -258,6 +287,8 @@ int Notes::minBlock(NoteBlock notes[])
     int min = 0;
 
     for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
+        assert(notes[i].current >= 0 && notes[i].current <= notes[i].size);
+
         if (notes[i].size == 0) {
             if (i == min) {
                 min++;
@@ -301,26 +332,20 @@ void Notes::Block::peaksToNotes(vector<Note>& notes)
 
 }
 
-/*int Notes::maxNote(array<float, NUMBER_OF_NOTES> &ampl)
+bool Notes::dump(ostream &fout)
 {
-    int note = 0;
-    for(int i = 0; i < NUMBER_OF_NOTES; i++) {
-        if (ampl[i] > ampl[note])
-            note = i;
+    if (fout.fail()) {
+        return false;
     }
-    return note;
-}
-*/
 
-void Notes::dump(ostream &fout)
-{
     fout << "***" << " Notes Dump " << "***" << endl;
-    int size = blocks[0].block.size();
-    int ntime = 0;
-    for(ntime = 0; ntime < size; ntime++) {
+    unsigned int size = blocks[0].block.size();
+    for(unsigned int ntime = 0; ntime < size; ntime++) {
         fout << "time = " << ntime << endl << endl;
         for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
-            blocks[i].dump(ntime >> i, fout);
+            if (! blocks[i].dump(ntime >> i, fout)) {
+                return false;
+            }
         }
         //int i = maxNote(blocks[0].block[ntime]);
         //fout << endl << "first max: " << i << " " << initNotes[i] << endl;
@@ -339,10 +364,18 @@ void Notes::dump(ostream &fout)
 
     fout << "**********" << endl;
     fout << "**********" << endl;
+
+    return true;
 }
 
-void Notes::Block::dump(int ntime, ostream &fout)
+bool Notes::Block::dump(unsigned int ntime, ostream &fout)
 {
+    if (fout.fail()) {
+        return false;
+    }
+
+    assert(ntime < block.size());
+
     fout << "first note: " << firstNote << " " << initNotes[firstNote] << endl;
     fout << "last note: " << lastNote << " " << initNotes[lastNote] << endl;
     fout << "frame size = " << frameSize << endl;
@@ -351,9 +384,9 @@ void Notes::Block::dump(int ntime, ostream &fout)
     fout << "max ampl " << block[ntime].maxAmpl << endl;
     fout << endl;
     for (int i = firstNote; i <= lastNote; i++) {
-        //assert(ntime < block.size());
         fout << block[ntime][i] << " ";
         //cout.flush();
     }
     fout << endl << endl;
+    return true;
 }

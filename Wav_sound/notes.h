@@ -49,10 +49,10 @@ class Notes
 {
 public:
     Notes();
-    void initialize(const char* fileName);
+    void initialize(string fileName);
     void generateMidView(vector<Note>& notesOut);
 
-    void dump(ostream& fout);
+    bool dump(ostream& fout);
 private:
     //enum TypeFrame {SIMPLE, WITH_OVERLAP};
     struct Block
@@ -67,9 +67,9 @@ private:
         void execute(const vector<float> & amplTime);
         void freqToNote(const float* const outFft,
                         AmplNotes & notes);
-        void keepOnlyPeaks(int nTime);
+        void indentifyPeaks(unsigned int nTime);
         void peaksToNotes(vector<Note>& notes);
-        void dump(int nTime, ostream& fout);
+        bool dump(unsigned int nTime, ostream& fout);
     };
 
     float initDiffFreq[NUMBER_OF_NOTES - 1];
@@ -77,9 +77,9 @@ private:
     vector<float> amplTime;
     Block blocks[NUMBER_OF_BLOCKS];
 
-    void keepOnlyPeaks();
-    void complementBlocks(int nTime);
-    void checkPeaks(int nTime);
+    void indentifyPeaks();
+    void complementBlocks(unsigned int nTime);
+    void checkPeaks(unsigned int nTime);
 
     void notesFromPeaks(vector<Note>& notesOut);
 
