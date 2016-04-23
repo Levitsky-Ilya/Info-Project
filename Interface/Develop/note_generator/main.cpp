@@ -59,7 +59,8 @@ vector<struct Notes> breaker(vector<struct Notes> & queue)
 
 	for (auto it2 = noteTiming.begin(); it2 != noteTiming.end(); ++it2){
 		for (auto it1 = noteList.begin(); it1 != noteList.end(); ++it1 ) {
-			if ((it1->initTime < *it2)&&((it1->initTime + it1->duration) > *it2)) {
+			if ((it1->initTime < *it2)&&
+					((it1->initTime + it1->duration) > *it2)) {
 				noteAdded.duration = it1->initTime + it1->duration - *it2;
 				noteAdded.initTime = *it2;
 				noteAdded.nNote = it1->nNote;
@@ -170,7 +171,8 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 
 		const float bit = 0.03125;
 
-		for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
+		for (auto it = note_pause_list.begin();
+				it != note_pause_list.end(); ++it) {
 			if (firstPause && near(it->pauseDur, queue[0].initTime, bit, bit)) {
 				f << it->pauseName;
 				firstPause = false;
@@ -247,26 +249,28 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 		float pauseTaken = 0;
 		if ((int)(queue[i+combNum].initTime) !=
 				(int)(queue[i].initTime + queue[i].duration)) {
-			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-				if (near(it->pauseDur, 1 - queue[i].initTime
-						- queue[i].duration + (int)(queue[i].initTime
-							+ queue[i].duration), bit, bit)) {
+			for (auto it = note_pause_list.begin();
+					it != note_pause_list.end(); ++it) {
+				if (near(it->pauseDur, 1 - queue[i].initTime -
+						queue[i].duration + (int)(queue[i].initTime +
+						queue[i].duration), bit, bit)) {
 					f << it->pauseName;
 					pauseTaken += 1 - queue[i].initTime - queue[i].duration
 						+ (int)(queue[i].initTime + queue[i].duration);
 				}
 			}
-			if (queue[i+combNum].initTime - queue[i].initTime
-					- queue[i].duration - pauseTaken > 1) {
+			if (queue[i+combNum].initTime - queue[i].initTime -
+					queue[i].duration - pauseTaken > 1) {
 				float full = 1;
-				while (queue[i+combNum].initTime - queue[i].initTime
-						- queue[i].duration - full - pauseTaken > 1) {
+				while (queue[i+combNum].initTime - queue[i].initTime -
+						queue[i].duration - full - pauseTaken > 1) {
 					full++;
 					f << "r1 ";
 				}
-				for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-					if (near(it->pauseDur, queue[i+1].initTime
-							- (int)(queue[i+1].initTime), bit, bit)) {
+				for (auto it = note_pause_list.begin();
+						it != note_pause_list.end(); ++it) {
+					if (near(it->pauseDur, queue[i+1].initTime -
+							(int)(queue[i+1].initTime), bit, bit)) {
 						f << it->pauseName;
 						for (size_t m = 0; m < tmp.size(); m++) {
 							tmp[m] = 0;
@@ -274,9 +278,11 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 					}
 				}
 			} else {
-				for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-					if (near(it->pauseDur, queue[i+1].initTime
-							- queue[i].initTime - queue[i].duration - pauseTaken, bit, bit)) {
+				for (auto it = note_pause_list.begin();
+						it != note_pause_list.end(); ++it) {
+					if (near(it->pauseDur,
+							queue[i+1].initTime - queue[i].initTime -
+							queue[i].duration - pauseTaken, bit, bit)) {
 						f << it->pauseName;
 						for (size_t m = 0; m < tmp.size(); m++) {
 							tmp[m] = 0;
@@ -285,9 +291,10 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 				}
 			}
 		} else {
-			for (auto it = note_pause_list.begin(); it != note_pause_list.end(); ++it) {
-				if (near(it->pauseDur, queue[i+combNum].initTime
-						- queue[i].initTime - queue[i].duration, bit, bit)) {
+			for (auto it = note_pause_list.begin();
+					it != note_pause_list.end(); ++it) {
+				if (near(it->pauseDur, queue[i+combNum].initTime -
+						queue[i].initTime - queue[i].duration, bit, bit)) {
 					f << it->pauseName;
 					for (size_t m = 0; m < tmp.size(); m++) {
 						tmp[m] = 0;
@@ -370,10 +377,11 @@ int main()
 	f << "normal = \\new Staff { \n";
 	drawNote(noteVectN, f);
 	int pauseCounterN = 0;
-	while ((int)(noteVectL[noteVectL.size()-1].initTime
-			+ noteVectL[noteVectL.size()-1].duration
-				- noteVectN[noteVectN.size()-1].initTime
-					- noteVectN[noteVectN.size()-1].duration) - pauseCounterN > 1) {
+	while ((int)(noteVectL[noteVectL.size()-1].initTime +
+			noteVectL[noteVectL.size()-1].duration -
+			noteVectN[noteVectN.size()-1].initTime -
+			noteVectN[noteVectN.size()-1].duration) -
+			pauseCounterN > 1) {
 		f << "r1 ";
 		pauseCounterN++;
 	}
@@ -384,10 +392,11 @@ int main()
 	f << "\\clef \"bass\" \n";
 	drawNote(noteVectL, f);
 	int pauseCounterL = 0;
-	while ((int)(noteVectN[noteVectN.size()-1].initTime
-			+ noteVectN[noteVectN.size()-1].duration
-				- noteVectL[noteVectL.size()-1].initTime
-					- noteVectL[noteVectL.size()-1].duration) - pauseCounterL > 1) {
+	while ((int)(noteVectN[noteVectN.size()-1].initTime +
+			noteVectN[noteVectN.size()-1].duration -
+			noteVectL[noteVectL.size()-1].initTime -
+			noteVectL[noteVectL.size()-1].duration) -
+			pauseCounterL > 1) {
 		f << "r1 ";
 		pauseCounterL++;
 	}

@@ -64,7 +64,7 @@ int main() {
 	auto noteWindowScrolled = sfg::ScrolledWindow::Create();
 	noteWindowScrolled->
 			SetScrollbarPolicy(sfg::ScrolledWindow::HORIZONTAL_NEVER
-				| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
+			| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
 	noteWindowScrolled->SetRequisition(noteWindowScrolled_REQ);
 	noteWindowScrolled->AddWithViewport(noteWindowScrolledBox);
 
@@ -135,7 +135,7 @@ int main() {
 	auto songWindowScrolled = sfg::ScrolledWindow::Create();
 	songWindowScrolled->
 			SetScrollbarPolicy(sfg::ScrolledWindow::HORIZONTAL_AUTOMATIC
-				| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
+			| sfg::ScrolledWindow::VERTICAL_AUTOMATIC);
 	songWindowScrolled->SetRequisition(SONG_WINDOW_SCR_REQ);
 	songWindowScrolled->AddWithViewport(songWindowScrolledBox);
 
