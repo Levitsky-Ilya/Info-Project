@@ -18,7 +18,8 @@ int main(int argc, char* argv[])
     }
 
     try {
-      WavFile wavFile(argv[1]);
+      WavFile wavFile;
+      wavFile.initialize(argv[1]);
 
 
       cout << "  BitsPerSample: " << wavFile.getbitsPerSample() << endl;
@@ -39,6 +40,5 @@ int main(int argc, char* argv[])
       cout << "bad_alloc caught: " << ba.what() << '\n';
       exit(EXIT_FAILURE);
     }
-    system("pause");
     return 0;
 }

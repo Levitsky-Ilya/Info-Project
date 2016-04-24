@@ -28,7 +28,6 @@
  */
 
 #include <iostream>     //cout, endl
-#include <sstream>      //ostringstream
 /**
  * When TIME == 1, time spent on reading the file and filling the vector
  * is measured.
@@ -46,7 +45,18 @@ const int SECONDS_IN_MINUTE = 60;
 const long SIZE_OF_LONG = sizeof(unsigned long);
 
 /** Constructor **/
-WavFile::WavFile (const char* fileName)
+WavFile::WavFile ()
+{
+    file = NULL;        //NULL or 0?)
+    fileName_ = "";
+    seekToData = 0;
+}
+
+/** Destructor **/
+WavFile::~WavFile ()
+{}
+
+void WavFile::initialize (const char* fileName)
 {
     errno_t err;
 
@@ -55,50 +65,43 @@ WavFile::WavFile (const char* fileName)
     err = fopen_s(&file, fileName, "rb");
     if (err)
     {
-        ostringstream msg;
-        msg << "Failed to open filename \"" << fileName << "\", error " << err;
-        string msgstr = msg.str();
+        string msgstr = "Failed to open filename \"" + fileName_
+                + "\", error " + to_string(err);
         throw Exception(Exception::OPEN_FAIL, msgstr);
     }
 
     /* Reads header of .wav file, converts to struct RiffWaveHeader. */
     err = fread(&riffWaveHeader, sizeof(RiffWaveHeader), 1, file);
     if (err != 1) {
-
-      ostringstream msg;
-
       if (feof(file)) {
-        msg << "EOF met too soon.";
-        string msgstr = msg.str();
+        string msgstr = "EOF met too soon.";
         throw Exception(Exception::EOF_SOON, msgstr);
       } else {
-        msg << "Undefined error" << err << "while reading file.";
-        string msgstr = msg.str();
+        string msgstr = "Undefined error" + to_string(err)
+                + "while reading file.";
         throw Exception(Exception::EREAD, msgstr);
-        /** Can/Should we define?!!! */
       }
     }
 
     if (strnicmp(riffWaveHeader.chunkId, "RIFF",
                 sizeof(riffWaveHeader.chunkId)) != 0)
     {
-      ostringstream msg;
-      msg << "Is not RIFF sequence. (" << riffWaveHeader.chunkId << ")";
-      string msgstr = msg.str();
+      string msgstr = "Is not RIFF sequence. (" +
+              (string)riffWaveHeader.chunkId + ")";
+      //msgstr += ")";
       throw Exception(Exception::BAD_RIFF, msgstr);
     }
     if (strnicmp(riffWaveHeader.format, "WAVE",
                 sizeof(riffWaveHeader.format)) != 0)
     {
-      ostringstream msg;
-      msg << "Is not WAVE format. (" << riffWaveHeader.format << ")";
-      string msgstr = msg.str();
+      string msgstr = "Is not WAVE format. ("
+              + (string)riffWaveHeader.format + ")";
+      //msgstr += ")";
       throw Exception(Exception::BAD_WAVE, msgstr);
     }
 
     char* subchunkId = new char[SIZE_OF_CHUNKID];
     unsigned long subchunkSize;
-    unsigned long subchunk2Size;
     bool reashedFmt = false;
     bool reashedData = false;
 
@@ -130,9 +133,7 @@ WavFile::WavFile (const char* fileName)
             err = fseek(file, fmtSubchunk.subchunk1Size - 16, SEEK_CUR);
             if (err)
             {
-              ostringstream msg;
-              msg << "Fseek error " << err << " in fmt.";
-              string msgstr = msg.str();
+              string msgstr = "Fseek error " +  to_string(err) + " in fmt.";
               throw Exception(Exception::SEEK_FAIL, msgstr);
             }
             seekToData += fmtSubchunk.subchunk1Size;
@@ -142,19 +143,15 @@ WavFile::WavFile (const char* fileName)
         {
             if (!reashedFmt)
             {
-              ostringstream msg;
-              msg << "No fmt subchunk found before data.";
-              string msgstr = msg.str();
+              string msgstr = "No fmt subchunk found before data.";
               throw Exception(Exception::NO_FMT, msgstr);
             }
-            DataSubchunk dataSubchunk;
             fread(&dataSubchunk, sizeof(DataSubchunk), 1, file);
 
-            subchunk2Size = dataSubchunk.subchunk2Size;
             reashedData = true;
 #if DEBUG
             cout << "DATA" << endl;
-            cout << " subchunk2Size: " << subchunk2Size << endl;
+            cout << " subchunk2Size: " << dataSubchunk.subchunk2Size << endl;
             cout << " seekToData: "
                  << seekToData + SIZE_OF_CHUNKID + SIZE_OF_LONG << endl;
             system("pause");
@@ -168,9 +165,7 @@ WavFile::WavFile (const char* fileName)
             err = fseek(file, subchunkSize, SEEK_CUR);
             if (err)
             {
-              ostringstream msg;
-              msg << "Fseek error " << err << " in some subchunk.";
-              string msgstr = msg.str();
+              string msgstr = "Fseek error " + to_string(err) + " in some subchunk.";
               throw Exception(Exception::SEEK_FAIL, msgstr);
             }
             seekToData += subchunkSize;
@@ -178,23 +173,10 @@ WavFile::WavFile (const char* fileName)
         seekToData += (SIZE_OF_CHUNKID + SIZE_OF_LONG);
     }
 
-    //cout << seeking << " " << header.chunkSize << endl;
-    fseek(file, subchunk2Size - 10, SEEK_CUR);
-    
-    /* Calculating duration of playing in min:sec. */
-    AllDurationSeconds = 1.0f * dataSubchunk.subchunk2Size
-                             /(fmtSubchunk.bitsPerSample / BITS_IN_BYTE)
-                             / fmtSubchunk.numChannels / fmtSubchunk.sampleRate;
-    DurationMinutes = (int)floor(AllDurationSeconds) / SECONDS_IN_MINUTE;
-    DurationSeconds = AllDurationSeconds - (DurationMinutes * SECONDS_IN_MINUTE);
-
     fclose(file);
     delete [] subchunkId;
+    //return 0;       ///WHAT SHOULD RETURN?
 }
-
-/** Destructor **/
-WavFile::~WavFile ()
-{}
 
 unsigned short WavFile::getRate()
 {
@@ -225,20 +207,6 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
     */
 
     /*
-    if (channels == 1)
-      union Block {
-        unsigned int sample;
-        char buffer[5];
-      } block;
-    else if(channels == 2)
-      union Block {
-        __int32 sample;
-        char buffer[5];
-      } block;
-    else assert(!"No so much samples");
-    */
-
-    /*
     union Block {
       unsigned short sample;
       char buffer[2 + 1] = {0};     //change 2 to bytesPerSample!
@@ -264,20 +232,19 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
     }
     */
 
-#if TIME
-    chrono::time_point<chrono::system_clock> start, end;
-    start = chrono::system_clock::now();
-#endif
-
     if(fmtSubchunk.bitsPerSample % BITS_IN_BYTE != 0 ||
        fmtSubchunk.bitsPerSample > sizeof(int) * BITS_IN_BYTE ||
        fmtSubchunk.bitsPerSample < sizeof(char) * BITS_IN_BYTE)
     {
-      ostringstream msg;
-      msg << "Unexpected depth of sounding: " << fmtSubchunk.bitsPerSample;
-      string msgstr = msg.str();
+      string msgstr = "Unexpected depth of sounding: "
+              + to_string(fmtSubchunk.bitsPerSample);
       throw Exception(Exception::UNEXP_DEPTH, msgstr);
     }
+
+#if TIME
+    chrono::time_point<chrono::system_clock> start, end;
+    start = chrono::system_clock::now();
+#endif
 
     fillVector(amplTime);
 
@@ -288,7 +255,7 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
 #endif
 }
 
-/** Input: empty vector
+/** Input: any vector to replace its content
  *  Algorithm: Creates buffer sized about one page.
  *             Divides file into pages.
  *             Reads from buffer and fills vector
@@ -297,35 +264,26 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
  */
 void WavFile::fillVector (vector<float> &amplTime)
 {
-    long sizeOfVector = amplTime.size();
-    if (sizeOfVector != 0)
-    {
-      ostringstream msg;
-      msg << "Not empty vector given to fillVector, it has size" << sizeOfVector;
-      string msgstr = msg.str();
-      throw Exception(Exception::NO_EMPTY_VECTOR, msgstr);
-    }
+    amplTime.clear();
+
     errno_t err;
     err = fopen_s(&file, fileName_.c_str(), "rb");
     if (err)
     {
-      ostringstream msg;
-      msg << "fillVector failed to open filename \"" << fileName_ << "\", error " << err;
-      string msgstr = msg.str();
+      string msgstr = "fillVector failed to open filename \"" + fileName_
+              + "\", error " + to_string(err);
       throw Exception(Exception::OPEN_FAIL, msgstr);
     }
 
     err = fseek(file, seekToData, SEEK_SET);
     if (err)
     {
-      ostringstream msg;
-      msg << "Fseek error " << err << "when seeked to data in fillVector";
-      string msgstr = msg.str();
+      string msgstr = "Fseek error " + to_string(err)
+              + "when seeked to data in fillVector";
       throw Exception(Exception::SEEK_FAIL, msgstr);
     }
 
     unsigned short depth = fmtSubchunk.bitsPerSample;
-
     unsigned long sizeOfData = dataSubchunk.subchunk2Size;
     char* buff = new char[sizeOfData];
     unsigned long blockAlign = fmtSubchunk.blockAlign;
