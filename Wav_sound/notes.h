@@ -53,6 +53,7 @@ public:
     void generateMidView(vector<Note>& notesOut);
 
     bool dump(ostream& fout);
+    bool dumpInitAmpl(ostream& fout);
 private:
     //enum TypeFrame {SIMPLE, WITH_OVERLAP};
     struct Block

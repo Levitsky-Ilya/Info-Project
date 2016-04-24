@@ -10,8 +10,8 @@ int main()
 {
     Notes perem;
     try {
-    perem.initialize("C:\\Users\\Admin\\Downloads\\sounds\\Am-C7-Em-chiptune.wav");
-    //perem.initialize("C:\\InfoProject\\Info-Project\\piano_A3.wav");
+    //perem.initialize("C:\\Users\\Admin\\Downloads\\sounds\\Am-C7-Em-chiptune.wav");
+    perem.initialize("C:\\InfoProject\\Info-Project\\piano_A3.wav");
     } catch (NotesExceptions::Connect &e) {
         cout << e.what() << endl;
         return 0;
@@ -24,6 +24,7 @@ int main()
     }
 
     vector<Note> a;
+
     try {
     perem.generateMidView(a);
     } catch (...) {
