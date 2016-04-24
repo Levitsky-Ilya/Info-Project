@@ -1,3 +1,6 @@
+#ifndef MYEXCEPTION_H
+#define MYEXCEPTION_H
+
 #include <iostream>
 #include <string>
 
@@ -15,7 +18,6 @@ public:
         BAD_RIFF,       //No RIFF label found.
         BAD_WAVE,       //No WAVE label found.
         UNEXP_DEPTH,    //Unexpected depth of sound.
-        NO_EMPTY_VECTOR //Vector given to fillVector is not empty.
     };
     Exception(ErrType errCode, string& errMessage) :
         errType(errCode),
@@ -28,3 +30,5 @@ protected:
     ErrType errType;
     string errMessage;
 };
+
+#endif //MYEXCEPTION_H
