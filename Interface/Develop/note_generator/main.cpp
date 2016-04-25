@@ -6,19 +6,26 @@
 #include <functional>
 #include <algorithm>
 #include <map>
-#include <notes.h>
+#include <../additional_files/notes.h>
+#include <../additional_files/wav_sound.h>
+#include <../additional_files/frequencies_for_notes.h>
+#include <../additional_files/fft.h>
+#include <../additional_files/complex.h>
+#include <../additional_files/exception.h>
 
 using namespace std;
 
-bool near(float freq, float num, float range1, float range2)
+// Function for comparing two float quantities
+bool near(float data, float num, float range1, float range2)
 {
-	if (((freq + range1) >= num)&&((freq - range2) <= num)) {
+	if (((data + range1) >= num)&&((data - range2) <= num)) {
 		return true;
 	} else {
 		return false;
 	}
 }
 
+// Function for writing durations properly
 string writer(string part1, string part2, string part3, string wrName)
 {
 	if (part3 == "") {
@@ -30,18 +37,27 @@ string writer(string part1, string part2, string part3, string wrName)
 	return part1 + wrName + part2 + wrName + part3;
 }
 
-bool compareDur(const Notes & note1, const Notes & note2)
+// Duration comparer (not being used right now)
+bool compareDur(const Note & note1, const Note & note2)
 {
 	return (note1.duration < note2.duration);
 }
 
-vector<struct Notes> breaker(vector<struct Notes> & queue)
+/*
+ * This function breaks all notes in vector so that
+ * it becomes possible to make chords from them.
+ * Also this function breaks long notes by tacts.
+ */
+vector<struct Note> breaker(vector<struct Note> & queue)
 {
 
-	list<struct Notes> noteList;
-	struct Notes noteAdded;
+	list<struct Note> noteList;
+	struct Note noteAdded;
 
-	list<float> noteTiming;
+/* Creating list with time of notes' "starts", "ends"
+ * and also with all integer values of time.
+ */
+	list<float> noteTiming;	
 	for (size_t i = 0; i < queue.size(); i++ ) {
 		noteTiming.push_back(queue[i].initTime);
 		noteTiming.push_back(queue[i].initTime + queue[i].duration);
@@ -52,11 +68,17 @@ vector<struct Notes> breaker(vector<struct Notes> & queue)
 	noteTiming.sort();
 	noteTiming.unique();
 
+/* "Converting" vector to list */
 	while(!queue.empty()) {
 		noteList.push_front(queue.back());
 		queue.pop_back();
 	}
 
+/*
+ * Comparing quantities from noteTiming with
+ * current note "start" and "end". Creating additional note if necessary
+ * and shortening the note from this additional note have been created.
+ */
 	for (auto it2 = noteTiming.begin(); it2 != noteTiming.end(); ++it2){
 		for (auto it1 = noteList.begin(); it1 != noteList.end(); ++it1 ) {
 			if ((it1->initTime < *it2)&&
@@ -72,6 +94,7 @@ vector<struct Notes> breaker(vector<struct Notes> & queue)
 		}
 	}
 
+/* "Converting" list to vector */
 	while (!noteList.empty()) {
 		queue.push_back(noteList.front());
 		noteList.pop_front();
@@ -83,11 +106,15 @@ vector<struct Notes> breaker(vector<struct Notes> & queue)
 
 }
 
-
-void drawNote(vector<struct Notes> & queue, ofstream & f)
+/*
+ * This function is responsible for putting
+ * everything in the file in the right order.
+ */
+void drawNote(vector<struct Note> & queue, ofstream & f)
 {
 	using namespace std::placeholders;
 
+/* Giving it's own text equivalent for each frequency */
 	map<int, string> freqMap;
 
 	freqMap[0]  =     "c,,"; freqMap[1]  =   "cis,,"; freqMap[2]  =     "d,,";
@@ -119,6 +146,7 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 	freqMap[78] = "fis''''"; freqMap[79] =   "g''''"; freqMap[80] = "gis''''";
 	freqMap[81] =   "a''''"; freqMap[82] = "ais''''"; freqMap[83] =   "b''''";
 
+/* Giving it's own text equivalent for each pause duration */
 	struct NotePause {
 		float pauseDur;
 		string pauseName;
@@ -135,6 +163,10 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 		{0.9375, "r2 r4 r8. "}, {1.0000,     "r1 "},
 	};
 
+/*
+ * Giving it's own text equivalent for each note duration.
+ * Functoin "writer" is being used for correct displaying.
+ */
 	struct NoteDur {
 		float noteDur;
 		std::function<string(string)> func;
@@ -159,18 +191,24 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 		{1.0000, std::bind(writer, "1 ",  "",    "",    _1)},
 	};
 
+/*
+ * tmp[] and freq_array[] (see below) are used to check if chords nearby
+ * have at lest one same note. In that case, there will be
+ * additional "(" and ")" to connect chords on display.
+ */
 	vector<int> tmp;
 
-	vector<int> freqArray;
-	int combNum = 0;
-	bool firstPause = true;
+	int combNum = 0; //for tracing an amount of notes taken at single step
+	bool firstPause = true; //flag for pauses in first music tact
 
 	for (unsigned int i = 0; i < queue.size(); )
 	{
+//Will be cleared if it's not a chord
 		string name = "< ";
-
+		vector<int> freqArray;
 		const float bit = 0.03125;
 
+// Pause in beginning of first music tact
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
 			if (firstPause && near(it->pauseDur, queue[0].initTime, bit, bit)) {
@@ -179,14 +217,26 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 			}
 		}
 
+/*
+ * Checking if we have chord and, if so,
+ * putting it in freqArray.
+ */
 		int k = 0;
 		while (((i+k) < queue.size())&&
-			  (queue[i+k].initTime == queue[i].initTime)) {
+			  (queue[i+k].initTime == queue[i].initTime)&&
+			   (queue[i+k].duration >= bit)) {
 			freqArray.push_back(queue[i+k].nNote);
 			k++;
 		}
+
+/*
+ * tmp storing frequencies for previous chords.
+ * We compare tmp and freqArray. If we find same notes,
+ * we need to use "(" and ")" in text file to place the slur.
+ * flag is used to place ")" then time the comes.
+ */
 		bool flag = true;
-		for (int m = 0; flag && m < k; m++) {
+		for (size_t m = 0; flag && m < freqArray.size(); m++) {
 			for (size_t n = 0; flag && n < tmp.size(); n++)	{
 				if (tmp[n] == freqArray[m]) {
 					f << "( ";
@@ -194,12 +244,22 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 				}
 			}
 		}
+
+/*
+ * Frequecies of chord are stored between "<" and ">", so we place them there.
+ * Single note is just being written without any additional characters.
+ * In that case, if the next note is not the same one, we clear tmp,
+ * if it is the same, data from freqArray is being written in tmp (it's the same
+ * for chords). There is also a special case then note duration is too short.
+ * In this case, we just clear tmp.
+ */
 		k = 0;
 		if (((i+k) < queue.size())&&
-					(queue[i].initTime == queue[i+1].initTime)) {
+				(queue[i].initTime == queue[i+1].initTime)&&
+				(queue[i+k].duration >= bit)) {
 			f << "< ";
 			while (((i+k) < queue.size())&&
-				  (queue[i].initTime == queue[i+k].initTime)) {
+					(queue[i].initTime == queue[i+k].initTime)) {
 				f << freqMap[queue[i+k].nNote];
 				f << " ";
 				name += freqMap[queue[i+k].nNote];
@@ -211,19 +271,31 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 			name += ">";
 			tmp = freqArray;
 		} else {
-			f << freqMap[queue[i].nNote];
-			name = "";
-			name += freqMap[queue[i].nNote];
-			combNum = 1;
-			if (queue[i].nNote != queue[i+1].nNote) {
+			if (queue[i].duration >= bit) {
+				f << freqMap[queue[i].nNote];
+				name = "";
+				name += freqMap[queue[i].nNote];
+				combNum = 1;
+				if (queue[i].nNote != queue[i+1].nNote) {
+					for (size_t m = 0; m < tmp.size(); m++) {
+						tmp[m] = 0;
+					}
+				} else {
+					tmp = freqArray;
+				}
+			} else {
 				for (size_t m = 0; m < tmp.size(); m++) {
 					tmp[m] = 0;
 				}
-			} else {
-				tmp = freqArray;
+				combNum = 1;
 			}
 		}
 
+
+/*
+ * Part, responsible for putting duration in file.
+ * If the note duration quantity is bigger than 1, we have additional text.
+ */
 		if (queue[i].duration > 1) {
 			float full = 0;
 			while (queue[i].duration - full > 1) {
@@ -242,13 +314,17 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 				}
 			}
 		}
+
 		if (flag == false) {
 			f << ") ";
 		}
 
+/* Here pauses between note are being added. */
 		float pauseTaken = 0;
+/* If the next note is in different tact, we need to do several things */
 		if ((int)(queue[i+combNum].initTime) !=
 				(int)(queue[i].initTime + queue[i].duration)) {
+/* 1) Write pause between our note and start of the next tact */
 			for (auto it = note_pause_list.begin();
 					it != note_pause_list.end(); ++it) {
 				if (near(it->pauseDur, 1 - queue[i].initTime -
@@ -259,14 +335,18 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 						+ (int)(queue[i].initTime + queue[i].duration);
 				}
 			}
-			if (queue[i+combNum].initTime - queue[i].initTime -
-					queue[i].duration - pauseTaken > 1) {
-				float full = 1;
-				while (queue[i+combNum].initTime - queue[i].initTime -
-						queue[i].duration - full - pauseTaken > 1) {
+/* 2) Add necessary amount of full pauses */
+			if (int(queue[i+combNum].initTime) -
+					(int)(queue[i].initTime + queue[i].duration +
+					pauseTaken) >= 1) {
+				float full = 0;
+				while ((int)(queue[i+combNum].initTime) -
+						(int)(queue[i].initTime + queue[i].duration +
+						pauseTaken) - full >= 1) {
 					full++;
 					f << "r1 ";
 				}
+/* 3) Add pause between start of tact with next note and next note itself */
 				for (auto it = note_pause_list.begin();
 						it != note_pause_list.end(); ++it) {
 					if (near(it->pauseDur, queue[i+1].initTime -
@@ -278,6 +358,7 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 					}
 				}
 			} else {
+/* Analogy for 2) and 3) if we don't have full pauses */
 				for (auto it = note_pause_list.begin();
 						it != note_pause_list.end(); ++it) {
 					if (near(it->pauseDur,
@@ -291,6 +372,7 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 				}
 			}
 		} else {
+/* If our note and the next one are in the same tact, the prosedure is simple */
 			for (auto it = note_pause_list.begin();
 					it != note_pause_list.end(); ++it) {
 				if (near(it->pauseDur, queue[i+combNum].initTime -
@@ -311,60 +393,81 @@ void drawNote(vector<struct Notes> & queue, ofstream & f)
 
 int main()
 {
-	Notes note_1;
-	note_1.nNote = 38;
-	note_1.duration = 0.4f;
-	note_1.initTime = 0.1;
+	/*Notes notes;
+	try {
+		notes.initialize("E:/Programs/Qt/Projects/note_generator/A.wav");
+	}
+	catch (Exception & e) {
+		cout << e.getErrorMessage() << endl;
+	}
 
-	Notes note_2;
+	vector<Note> noteVect;
+	notes.generateMidView(noteVect);
+
+	vector<Note> noteVectN;
+	vector<Note> noteVectL;
+	for (size_t i = 0; i < noteVect.size(); i++) {
+		if (noteVect[i].nNote < 36) {
+			noteVectL.push_back(noteVect[i]);
+		} else {
+			noteVectN.push_back(noteVect[i]);
+		}
+	}*/
+
+	Note note_1;
+	note_1.nNote = 39;
+	note_1.duration = 1.5f;
+	note_1.initTime = 2.5;
+
+	Note note_2;
 	note_2.nNote = 47;
-	note_2.duration = 1.16f;
-	note_2.initTime = 0.1;
+	note_2.duration = 1.021f;
+	note_2.initTime = 2.5;
 
-	Notes note_3;
-	note_3.nNote = 41;
-	note_3.duration = 0.16f;
-	note_3.initTime = 0.5;
+	Note note_3;
+	note_3.nNote = 47;
+	note_3.duration = 0.3f;
+	note_3.initTime = 2.521;
 
-	Notes note_4;
+	Note note_4;
 	note_4.nNote = 43;
 	note_4.duration = 3.5f;
-	note_4.initTime = 4.0;
+	note_4.initTime = 5.0;
 
-	Notes note_5;
+	Note note_5;
 	note_5.nNote = 45;
 	note_5.duration = 2.68f;
-	note_5.initTime = 4.5;
+	note_5.initTime = 5.5;
 
-	Notes note_6;
+	Note note_6;
 	note_6.nNote = 37;
 	note_6.duration = 0.25f;
-	note_6.initTime = 5.8;
+	note_6.initTime = 6.8;
 
 
-	Notes note_7;
+	Note note_7;
 	note_7.nNote = 25;
 	note_7.duration = 0.25f;
 	note_7.initTime = 0;
 
-	Notes note_8;
+	Note note_8;
 	note_8.nNote = 35;
 	note_8.duration = 3.3f;
 	note_8.initTime = 0.5;
 
-	Notes note_9;
+	Note note_9;
 	note_9.nNote = 28;
 	note_9.duration = 1.0f;
 	note_9.initTime = 1.5;
 
-	vector<struct Notes> noteVectN;
+	vector<struct Note> noteVectN;
 	noteVectN.push_back(note_1);
 	noteVectN.push_back(note_2);
 	noteVectN.push_back(note_3);
 	noteVectN.push_back(note_4);
 	noteVectN.push_back(note_5);
 	noteVectN.push_back(note_6);
-	vector<struct Notes> noteVectL;
+	vector<struct Note> noteVectL;
 	noteVectL.push_back(note_7);
 	noteVectL.push_back(note_8);
 	noteVectL.push_back(note_9);
@@ -375,30 +478,72 @@ int main()
 	ofstream f("E:/Programs/Lilypond/file.ly");
 
 	f << "normal = \\new Staff { \n";
-	drawNote(noteVectN, f);
-	int pauseCounterN = 0;
-	while ((int)(noteVectL[noteVectL.size()-1].initTime +
-			noteVectL[noteVectL.size()-1].duration -
-			noteVectN[noteVectN.size()-1].initTime -
-			noteVectN[noteVectN.size()-1].duration) -
-			pauseCounterN > 1) {
+
+/* Drawing pauses at the beginning fot the same length of staffs*/
+	int beginPauseCounterN = 0;
+	while ((int)noteVectN[0].initTime - (int)noteVectL[0].initTime -
+		   beginPauseCounterN >= 1) {
 		f << "r1 ";
-		pauseCounterN++;
+		beginPauseCounterN++;
+	}
+/* We have to make new vector without these pauses for algorythm to work */
+	vector<Note> newNoteVectN;
+	for (size_t i = 0; i < noteVectN.size(); i++) {
+		newNoteVectN.push_back(noteVectN[i]);
+		newNoteVectN[i].initTime = noteVectN[i].initTime - beginPauseCounterN;
+	}
+
+
+	drawNote(newNoteVectN, f);
+
+
+/* Drawing pauses in the end for the same length of staffs */
+	int endPauseCounterN = 0;
+	if ((noteVectL.size() != 0)&&(noteVectN.size() != 0)) {
+		while ((int)(noteVectL[noteVectL.size()-1].initTime +
+				noteVectL[noteVectL.size()-1].duration) -
+				(int)(noteVectN[noteVectN.size()-1].initTime +
+				noteVectN[noteVectN.size()-1].duration) -
+				endPauseCounterN >= 1) {
+			f << "r1 ";
+			endPauseCounterN++;
+		}
 	}
 	f << "\n";
 	f << "}\n";
 
 	f << "bass = \\new Staff { \n";
 	f << "\\clef \"bass\" \n";
-	drawNote(noteVectL, f);
-	int pauseCounterL = 0;
-	while ((int)(noteVectN[noteVectN.size()-1].initTime +
-			noteVectN[noteVectN.size()-1].duration -
-			noteVectL[noteVectL.size()-1].initTime -
-			noteVectL[noteVectL.size()-1].duration) -
-			pauseCounterL > 1) {
+
+/* See above */
+	int beginPauseCounterL = 0;
+	while ((int)noteVectL[0].initTime - (int)noteVectN[0].initTime -
+		   beginPauseCounterL >= 1) {
 		f << "r1 ";
-		pauseCounterL++;
+		beginPauseCounterL++;
+	}
+/* See above */
+	vector<Note> newNoteVectL;
+	for (size_t i = 0; i < noteVectL.size(); i++) {
+		newNoteVectL.push_back(noteVectL[i]);
+		newNoteVectL[i].initTime = noteVectL[i].initTime - beginPauseCounterL;
+	}
+
+
+	drawNote(newNoteVectL, f);
+
+
+/* See above */
+	int endPauseCounterL = 0;
+	if ((noteVectL.size() != 0)&&(noteVectN.size() != 0)) {
+		while ((int)(noteVectN[noteVectN.size()-1].initTime +
+				noteVectN[noteVectN.size()-1].duration) -
+				(int)(noteVectL[noteVectL.size()-1].initTime +
+				noteVectL[noteVectL.size()-1].duration) -
+				endPauseCounterL >= 1) {
+			f << "r1 ";
+			endPauseCounterL++;
+		}
 	}
 
 	f << "\n";
