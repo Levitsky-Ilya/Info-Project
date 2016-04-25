@@ -45,11 +45,12 @@ Notes::Notes()
 
 void Notes::initialize(string fileName)
 {
-    WavFile melody(fileName.c_str());
+    WavFile melody;
+    melody.initialize(fileName.c_str());
     unsigned int sampleRate = melody.getRate();
 
     if (sampleRate == 0) {
-        string msg = "Failed to read hider of file: " + fileName;
+        string msg = "Failed to read headers of file: " + fileName;
         throw NotesExceptions::Connect(msg);
     }
 
