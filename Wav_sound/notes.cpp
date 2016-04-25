@@ -49,7 +49,7 @@ void Notes::initialize(string fileName)
     int sampleRate = melody.getRate();
 
     if (sampleRate == 0) {
-        string msg = "Failed to read hiders of file: " + fileName;
+        string msg = "Failed to read headers of file: " + fileName;
         throw NotesExceptions::Connect(msg);
     }
 
