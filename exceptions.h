@@ -15,6 +15,7 @@ namespace NotesExceptions
 {
 DECLARE_EXC(OpenFile);
 DECLARE_EXC(ReadFile);
+DECLARE_EXC(FalseFormat);
 DECLARE_EXC(ToBigSize);
 DECLARE_EXC(FileDamaged);
 DECLARE_EXC(Connect);

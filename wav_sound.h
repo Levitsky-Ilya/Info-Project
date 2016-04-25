@@ -27,13 +27,13 @@ struct RiffWaveHeader
     /** WAV-format begin with RIFF-header. **/
 
     // Containes symbols "RIFF" in ASCII.
-    char chunkId[SIZE_OF_CHUNKID];
+    char chunkId[SIZE_OF_CHUNKID] = {0};
 
     // Size of file counting after this parameter.
-    unsigned long chunkSize;
+    unsigned long chunkSize = 0;
 
     // Containes symbols "WAVE" in ASCII.
-    char format[SIZE_OF_CHUNKID];
+    char format[SIZE_OF_CHUNKID] = {0};
 
 /** Format "WAVE" consists of subchunks. **/
 };
@@ -43,23 +43,23 @@ struct FmtSubchunk
     /** FmtSubchunk begins with "fmt " symbols **/
     //char subchunk1Id[SIZE_OF_CHUNKID];          // Containes symbols "fmt "
 
-    unsigned long subchunk1Size;
+    unsigned long subchunk1Size = 0;
 
-    unsigned short audioFormat;
+    unsigned short audioFormat = 0;
 
-    unsigned short numChannels;
+    unsigned short numChannels = 0;
 
-    unsigned long sampleRate;
+    unsigned long sampleRate = 0;
 
-    unsigned long byteRate;
+    unsigned long byteRate = 0;
 
     // sampleRate * numChannels * bitsPerSample/8
 
     // numChannels * bitsPerSample/8
     // Number of bytes in 1 sample, including all channels.
-    unsigned short blockAlign;
+    unsigned short blockAlign = 0;
 
-    unsigned short bitsPerSample; // ("Depth" of sounding).
+    unsigned short bitsPerSample = 0; // ("Depth" of sounding).
 };
 
 struct DataSubchunk
@@ -68,7 +68,7 @@ struct DataSubchunk
     //char subchunk2Id[SIZE_OF_CHUNKID];          // Containes symbols "data" (0x64617461)
 
     // Amount of bytes in data area.
-    unsigned long subchunk2Size;
+    unsigned long subchunk2Size = 0;
 
     // Wav data are following.
 };
@@ -76,8 +76,9 @@ struct DataSubchunk
 class WavFile
 {
 public:
-    WavFile (const char *fileName);
+    WavFile ();
     ~WavFile ();
+    void initialize(const char* fileName);
     unsigned short getRate();
     unsigned short getChannels();
     unsigned short getbitsPerSample();
@@ -97,10 +98,6 @@ private:
 
     void fillVector(vector<float> &amplTime);
     float strtoampl(const char* str, const unsigned short depth);
-
-    float AllDurationSeconds;
-    int DurationMinutes;
-    float DurationSeconds;
 };
 
 #endif // WAV_SOUND_H

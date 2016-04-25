@@ -46,14 +46,13 @@ Notes::Notes()
 void Notes::initialize(string fileName)
 {
     WavFile melody(fileName.c_str());
-    int sampleRate = melody.getRate();
+    unsigned int sampleRate = melody.getRate();
 
     if (sampleRate == 0) {
         string msg = "Failed to read headers of file: " + fileName;
         throw NotesExceptions::Connect(msg);
     }
 
-    melody.getAmplitudeArray(amplTime);
     unsigned int frameSize = 1;
     int firstNote = 0;
     //int channels = melody.getChannels();
@@ -62,12 +61,19 @@ void Notes::initialize(string fileName)
         while (sampleRate / (frameSize << 1) > initDiffFreq[NOTE_C[i]]) {
             frameSize <<= 1;
         }
+        if (frameSize <= NUMBER_OF_NOTES) {
+            string msg = "Failed to read hider of file: " + fileName +
+                    " wrong sample rate: " + std::to_string(sampleRate);
+            throw NotesExceptions::Connect(msg);
+        }
+
         blocks[i].frameSize = frameSize;
         blocks[i].diffFreq = (float)sampleRate / (float)frameSize;
 
         firstNote = NOTE_C[i];
         while(initDiffFreq[firstNote] < blocks[i].diffFreq)
             firstNote++;
+        assert(firstNote < NUMBER_OF_NOTES - 1);
 
         blocks[i].firstNote = firstNote;
     }
@@ -79,10 +85,18 @@ void Notes::initialize(string fileName)
     blocks[3].lastNote = blocks[2].firstNote;
 #endif
 
+    melody.getAmplitudeArray(amplTime);
+    if (amplTime.size() == 0) {
+        string msg = "Failed to give data from file";
+        throw NotesExceptions::Connect(msg);
+    }
+
 }
 
 void Notes::generateMidView(vector<Note>& notesOut)
 {
+    notesOut.resize(0);
+
     thread thr0(blocks[0].execute, &(blocks[0]), ref(amplTime));
     thread thr1(blocks[1].execute, &(blocks[1]), ref(amplTime));
     thread thr2(blocks[2].execute, &(blocks[2]), ref(amplTime));
@@ -129,8 +143,14 @@ void Notes::Block::execute(const vector<float> & amplTime)
 
     for (unsigned int i = 0; i < melodySize; i += frameSize) {
 
+        //there is a duct tape, I think. Or not. I'll decide later.
         for (unsigned int j = 0; j < frameSize; j++) {
-            inFft[j] = complex(amplTime[i+j], 0.0);
+            if (i + j < melodySize) {
+                inFft[j] = complex(amplTime[i+j], 0.0);
+            }
+            else {
+                inFft[j] = complex(0.0, 0.0);
+            }
         }
 
         fft.applyWindowG(inFft, frameSize);
@@ -152,6 +172,8 @@ void Notes::Block::freqToNote(const float * const outFft,
     float freq = 0;
     for (int k = firstNote; k <= lastNote; k++) {
         j = (int)(initNotes[k] / diffFreq);
+        assert (j + 1 < frameSize);
+
         freq = diffFreq * j;
         if (freq + diffFreq - initNotes[k] < initNotes[k] - freq) {
             notes[k] = outFft[j + 1];
@@ -172,9 +194,11 @@ void Notes::Block::freqToNote(const float * const outFft,
 void Notes::indentifyPeaks()
 {
     unsigned int size = blocks[0].block.size();
+
+    //chage if there is some application of typeFrame!!!
     for (unsigned int i = 0; i < size; i++) {
 
-        //after this cycle there is may be a conflict between
+        //after this cycle there may be a conflict between
         //first note of current block
         //and last notes of elder block
         for (int j = 0; j < NUMBER_OF_BLOCKS; j++) {
@@ -228,6 +252,7 @@ void Notes::Block::indentifyPeaks(unsigned int nTime)
 
 void Notes::checkPeaks(unsigned int nTime)
 {
+    //chage if there is some application of typeFrame!!!
     for (int i = 0; i < NUMBER_OF_BLOCKS - 1; i++) {
         assert((nTime >> i) < blocks[i].block.size() &&
                (nTime >> (i+1)) < blocks[i+1].block.size());
@@ -278,7 +303,6 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
     for (unsigned int i = 0; i < outSize; i++) {
         int a = minBlock(notes);
         notesOut[i] = notes[a].noteBlock[notes[a].current];
-        //notesOut.push_back(notes[a].noteBlock[notes[a].current]);
         notes[a].current++;
     }
 }
@@ -343,25 +367,17 @@ bool Notes::dump(ostream &fout)
     unsigned int size = blocks[0].block.size();
     for(unsigned int ntime = 0; ntime < size; ntime++) {
         fout << "time = " << ntime << endl << endl;
+
         for (int i = 0; i < NUMBER_OF_BLOCKS; i++) {
-            if (! blocks[i].dump(ntime >> i, fout)) {
-                return false;
+
+            //chage if there is some application of typeFrame!!!
+            if (ntime % (1 << i) == 0) {
+                if (! blocks[i].dump(ntime >> i, fout)) {
+                    return false;
+                }
             }
         }
-        //int i = maxNote(blocks[0].block[ntime]);
-        //fout << endl << "first max: " << i << " " << initNotes[i] << endl;
     }
-
-    //cout << "first ampl: " << amplTime[0] << endl;
-    //unsigned int size = amplTime.size() - 1;
-    //cout << "last ampl: " << amplTime[size] << endl << endl;
-
-    /*for (int i = 0; i < 20; i++)
-        cout << amplTime[i] << " ";
-    cout << endl << endl;
-    for (unsigned int i = size; i > size - (blocks[0].frameSize); i--)
-        cout << amplTime[i] << " ";
-    cout << endl;*/
 
     fout << "**********" << endl;
     fout << "**********" << endl;
@@ -384,10 +400,24 @@ bool Notes::Block::dump(unsigned int ntime, ostream &fout)
     fout << "size of block = " << block.size() << endl;
     fout << "max ampl " << block[ntime].maxAmpl << endl;
     fout << endl;
+
     for (int i = firstNote; i <= lastNote; i++) {
         fout << block[ntime][i] << " ";
-        //cout.flush();
     }
     fout << endl << endl;
+    return true;
+}
+
+bool Notes::dumpInitAmpl(ostream &fout)
+{
+    if (fout.fail()) {
+        return false;
+    }
+
+    unsigned long size = amplTime.size();
+    for (unsigned long int i = 0; i < size; i++)
+        fout << amplTime[i] << " ";
+    fout << endl;
+
     return true;
 }

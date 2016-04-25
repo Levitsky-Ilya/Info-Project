@@ -1,7 +1,7 @@
 #ifndef FREQUENCIES_FOR_NOTES
 #define FREQUENCIES_FOR_NOTES
 
-const int NUMBER_OF_NOTES = 84; //do I have 84 notes? Really???
+const int NUMBER_OF_NOTES = 84;
 
 const float initNotes[NUMBER_OF_NOTES] = {32.703, 34.648, 36.708, 38.891,
                                           41.203, 43.654, 46.249, 48.999,
