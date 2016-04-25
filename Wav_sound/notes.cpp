@@ -45,7 +45,8 @@ Notes::Notes()
 
 void Notes::initialize(string fileName)
 {
-    WavFile melody(fileName.c_str());
+    WavFile melody;
+    melody.initialize(fileName.c_str());
     unsigned int sampleRate = melody.getRate();
 
     if (sampleRate == 0) {
