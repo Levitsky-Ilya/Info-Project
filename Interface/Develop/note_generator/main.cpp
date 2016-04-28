@@ -160,7 +160,7 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 		{0.5625,    "r2 r16 "}, {0.6250,  "r2 r8 "},
 		{0.6875,    "r2 r8. "}, {0.7500,    "r2. "},
 		{0.8125, "r2 r4 r16 "}, {0.8750, "r2 r4. "},
-		{0.9375, "r2 r4 r8. "}, {1.0000,     "r1 "},
+		{0.9375, "r2 r4 r8. "},
 	};
 
 /*
@@ -393,7 +393,7 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 
 int main()
 {
-	/*Notes notes;
+	Notes notes;
 	try {
 		notes.initialize("E:/Programs/Qt/Projects/note_generator/A.wav");
 	}
@@ -412,9 +412,9 @@ int main()
 		} else {
 			noteVectN.push_back(noteVect[i]);
 		}
-	}*/
+	}
 
-	Note note_1;
+	/*Note note_1;
 	note_1.nNote = 39;
 	note_1.duration = 1.5f;
 	note_1.initTime = 2.5;
@@ -470,7 +470,7 @@ int main()
 	vector<struct Note> noteVectL;
 	noteVectL.push_back(note_7);
 	noteVectL.push_back(note_8);
-	noteVectL.push_back(note_9);
+	noteVectL.push_back(note_9);*/
 
 	breaker(noteVectN);
 	breaker(noteVectL);
@@ -481,20 +481,24 @@ int main()
 
 /* Drawing pauses at the beginning fot the same length of staffs*/
 	int beginPauseCounterN = 0;
-	while ((int)noteVectN[0].initTime - (int)noteVectL[0].initTime -
-		   beginPauseCounterN >= 1) {
-		f << "r1 ";
-		beginPauseCounterN++;
-	}
+	if ((noteVectN.size() != 0)&&(noteVectL.size() != 0)) {
+		while ((int)noteVectN[0].initTime - (int)noteVectL[0].initTime -
+			   beginPauseCounterN >= 1) {
+			f << "r1 ";
+			beginPauseCounterN++;
+		}
 /* We have to make new vector without these pauses for algorythm to work */
-	vector<Note> newNoteVectN;
-	for (size_t i = 0; i < noteVectN.size(); i++) {
-		newNoteVectN.push_back(noteVectN[i]);
-		newNoteVectN[i].initTime = noteVectN[i].initTime - beginPauseCounterN;
+		vector<Note> newNoteVectN;
+		for (size_t i = 0; i < noteVectN.size(); i++) {
+			newNoteVectN.push_back(noteVectN[i]);
+			newNoteVectN[i].initTime = noteVectN[i].initTime - beginPauseCounterN;
+		}
+		drawNote(newNoteVectN, f);
+	} else {
+		drawNote(noteVectN, f);
 	}
 
 
-	drawNote(newNoteVectN, f);
 
 
 /* Drawing pauses in the end for the same length of staffs */
@@ -517,20 +521,24 @@ int main()
 
 /* See above */
 	int beginPauseCounterL = 0;
-	while ((int)noteVectL[0].initTime - (int)noteVectN[0].initTime -
-		   beginPauseCounterL >= 1) {
-		f << "r1 ";
-		beginPauseCounterL++;
-	}
+	if ((noteVectN.size() != 0)&&(noteVectL.size() != 0)) {
+		while ((int)noteVectL[0].initTime - (int)noteVectN[0].initTime -
+			   beginPauseCounterL >= 1) {
+			f << "r1 ";
+			beginPauseCounterL++;
+		}
 /* See above */
-	vector<Note> newNoteVectL;
-	for (size_t i = 0; i < noteVectL.size(); i++) {
-		newNoteVectL.push_back(noteVectL[i]);
-		newNoteVectL[i].initTime = noteVectL[i].initTime - beginPauseCounterL;
+		vector<Note> newNoteVectL;
+		for (size_t i = 0; i < noteVectL.size(); i++) {
+			newNoteVectL.push_back(noteVectL[i]);
+			newNoteVectL[i].initTime = noteVectL[i].initTime - beginPauseCounterL;
+		}
+		drawNote(newNoteVectL, f);
+	} else {
+		drawNote(noteVectL, f);
 	}
 
 
-	drawNote(newNoteVectL, f);
 
 
 /* See above */
