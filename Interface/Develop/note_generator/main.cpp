@@ -201,17 +201,29 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 	int combNum = 0; //for tracing an amount of notes taken at single step
 	bool firstPause = true; //flag for pauses in first music tact
 
-	for (unsigned int i = 0; i < queue.size(); )
-	{
+/* Deleting notes that take less than 1/32 from whole */
+	for (unsigned int i = 0; i < queue.size(); i++) {
+		const float BIT = 0.03125;
+		if (queue[i].duration < BIT) {
+			for (size_t num = i; num < queue.size() - 1; num++) {
+				queue[num] = queue[num+1];
+			}
+			queue.pop_back();
+		}
+	}
+
+	for (unsigned int i = 0; i < queue.size(); ) {
 //Will be cleared if it's not a chord
 		string name = "< ";
 		vector<int> freqArray;
-		const float bit = 0.03125;
+		const float BIT = 0.03125;
+
+
 
 // Pause in beginning of first music tact
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
-			if (firstPause && near(it->pauseDur, queue[0].initTime, bit, bit)) {
+			if (firstPause && near(it->pauseDur, queue[0].initTime, BIT, BIT)) {
 				f << it->pauseName;
 				firstPause = false;
 			}
@@ -224,7 +236,7 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 		int k = 0;
 		while (((i+k) < queue.size())&&
 			  (queue[i+k].initTime == queue[i].initTime)&&
-			   (queue[i+k].duration >= bit)) {
+			   (queue[i+k].duration >= BIT)) {
 			freqArray.push_back(queue[i+k].nNote);
 			k++;
 		}
@@ -256,7 +268,7 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 		k = 0;
 		if (((i+k) < queue.size())&&
 				(queue[i].initTime == queue[i+1].initTime)&&
-				(queue[i+k].duration >= bit)) {
+				(queue[i+k].duration >= BIT)) {
 			f << "< ";
 			while (((i+k) < queue.size())&&
 					(queue[i].initTime == queue[i+k].initTime)) {
@@ -271,7 +283,7 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 			name += ">";
 			tmp = freqArray;
 		} else {
-			if (queue[i].duration >= bit) {
+			if (queue[i].duration >= BIT) {
 				f << freqMap[queue[i].nNote];
 				name = "";
 				name += freqMap[queue[i].nNote];
@@ -296,6 +308,7 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
  * Part, responsible for putting duration in file.
  * If the note duration quantity is bigger than 1, we have additional text.
  */
+		float length;
 		if (queue[i].duration > 1) {
 			float full = 0;
 			while (queue[i].duration - full > 1) {
@@ -303,14 +316,16 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 				f << "1~ " + name;
 			}
 			for (auto it = noteDurList.begin(); it != noteDurList.end(); ++it) {
-				if (near(it->noteDur, queue[i].duration - full, bit, bit)) {
+				if (near(it->noteDur, queue[i].duration - full, BIT, BIT)) {
 					f << it->func(name);
+					length += it->noteDur + full;
 				}
 			}
 		} else {
 			for (auto it = noteDurList.begin(); it != noteDurList.end(); ++it) {
-				if (near(it->noteDur, queue[i].duration, bit, bit)) {
+				if (near(it->noteDur, queue[i].duration, BIT, BIT)) {
 					f << it->func(name);
+					length += it->noteDur;
 				}
 			}
 		}
@@ -329,20 +344,30 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 					it != note_pause_list.end(); ++it) {
 				if (near(it->pauseDur, 1 - queue[i].initTime -
 						queue[i].duration + (int)(queue[i].initTime +
-						queue[i].duration), bit, bit)) {
+						queue[i].duration), BIT, BIT)) {
 					f << it->pauseName;
 					pauseTaken += 1 - queue[i].initTime - queue[i].duration
 						+ (int)(queue[i].initTime + queue[i].duration);
+					length += it->pauseDur;
+				}
+			}
+/* Case then we don't put enough notes to make a full tact */
+			if ((int)queue[i+combNum].initTime ==
+					queue[i+combNum].initTime) {
+				if (queue[i+combNum].initTime - length > BIT) {
+					f << "r16 ";
+					length = 0;
 				}
 			}
 /* 2) Add necessary amount of full pauses */
 			if (int(queue[i+combNum].initTime) -
 					(int)(queue[i].initTime + queue[i].duration +
-					pauseTaken) >= 1) {
+					pauseTaken) > 1) {
 				float full = 0;
-				while ((int)(queue[i+combNum].initTime) -
+				while (((i+combNum) < queue.size())&&
+						((int)(queue[i+combNum].initTime) -
 						(int)(queue[i].initTime + queue[i].duration +
-						pauseTaken) - full >= 1) {
+						pauseTaken) - full >= 1)) {
 					full++;
 					f << "r1 ";
 				}
@@ -350,7 +375,8 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 				for (auto it = note_pause_list.begin();
 						it != note_pause_list.end(); ++it) {
 					if (near(it->pauseDur, queue[i+1].initTime -
-							(int)(queue[i+1].initTime), bit, bit)) {
+							(int)(queue[i+1].initTime), BIT, BIT)&&
+							((i+1) < queue.size())) {
 						f << it->pauseName;
 						for (size_t m = 0; m < tmp.size(); m++) {
 							tmp[m] = 0;
@@ -363,7 +389,8 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 						it != note_pause_list.end(); ++it) {
 					if (near(it->pauseDur,
 							queue[i+1].initTime - queue[i].initTime -
-							queue[i].duration - pauseTaken, bit, bit)) {
+							queue[i].duration - pauseTaken, BIT, BIT)&&
+							((i+1) < queue.size())) {
 						f << it->pauseName;
 						for (size_t m = 0; m < tmp.size(); m++) {
 							tmp[m] = 0;
@@ -376,11 +403,32 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 			for (auto it = note_pause_list.begin();
 					it != note_pause_list.end(); ++it) {
 				if (near(it->pauseDur, queue[i+combNum].initTime -
-						queue[i].initTime - queue[i].duration, bit, bit)) {
+						queue[i].initTime - queue[i].duration, BIT, BIT)) {
 					f << it->pauseName;
+					length += it->pauseDur;
 					for (size_t m = 0; m < tmp.size(); m++) {
 						tmp[m] = 0;
 					}
+				}
+			}
+/* Adding small pauses at the end of notes */
+			if (i == queue.size() - 1) {
+				float lastLength;
+				for (auto it = note_pause_list.begin();
+						it != note_pause_list.end(); ++it) {
+					if (near(it->pauseDur, (int)(queue[i].initTime +
+							queue[i].duration) + 1 -
+							queue[i].initTime - queue[i].duration, BIT, BIT)) {
+						f << it->pauseName;
+						lastLength += it->pauseDur;
+					}
+				}
+/* Case when we put not enough notes in file to make a full tact */
+				if ((int)(queue[i].initTime + queue[i].duration) + 1 -
+						(queue[i].initTime + queue[i].duration -
+						(int)(queue[i].initTime + queue[i].duration)) -
+						lastLength > BIT) {
+					f << "r16 ";
 				}
 			}
 		}
@@ -395,7 +443,8 @@ int main()
 {
 	Notes notes;
 	try {
-		notes.initialize("E:/Programs/Qt/Projects/note_generator/A.wav");
+		notes.initialize("E:/Programs/Qt/Projects/note_generator/"
+						 "C-E-G-E-C-G-E-D.wav");
 	}
 	catch (Exception & e) {
 		cout << e.getErrorMessage() << endl;
@@ -491,7 +540,8 @@ int main()
 		vector<Note> newNoteVectN;
 		for (size_t i = 0; i < noteVectN.size(); i++) {
 			newNoteVectN.push_back(noteVectN[i]);
-			newNoteVectN[i].initTime = noteVectN[i].initTime - beginPauseCounterN;
+			newNoteVectN[i].initTime = noteVectN[i].initTime -
+			beginPauseCounterN;
 		}
 		drawNote(newNoteVectN, f);
 	} else {
@@ -531,7 +581,8 @@ int main()
 		vector<Note> newNoteVectL;
 		for (size_t i = 0; i < noteVectL.size(); i++) {
 			newNoteVectL.push_back(noteVectL[i]);
-			newNoteVectL[i].initTime = noteVectL[i].initTime - beginPauseCounterL;
+			newNoteVectL[i].initTime = noteVectL[i].initTime -
+			beginPauseCounterL;
 		}
 		drawNote(newNoteVectL, f);
 	} else {
@@ -568,4 +619,3 @@ int main()
 
 	return 0;
 }
-
