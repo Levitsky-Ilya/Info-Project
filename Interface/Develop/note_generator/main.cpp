@@ -205,6 +205,11 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 	for (unsigned int i = 0; i < queue.size(); i++) {
 		const float BIT = 0.03125;
 		if (queue[i].duration < BIT) {
+			if ((queue[i].initTime == (int)queue[i].initTime)&&
+					((i+1) < queue.size())) {
+				queue[i+1].initTime -= queue[i].duration;
+				queue[i+1].duration += queue[i].duration;
+			}
 			for (size_t num = i; num < queue.size() - 1; num++) {
 				queue[num] = queue[num+1];
 			}
@@ -351,15 +356,25 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 					length += it->pauseDur;
 				}
 			}
+		}
 /* Case then we don't put enough notes to make a full tact */
-			if ((int)queue[i+combNum].initTime ==
+		if ((int)queue[i+combNum].initTime ==
+				queue[i+combNum].initTime) {
+			if (queue[i].initTime + queue[i].duration ==
 					queue[i+combNum].initTime) {
-				if (queue[i+combNum].initTime - length > BIT) {
+				f << "~ " + name + "16 ";
+				length = 0;
+			} else {
+				if ((queue[i+combNum].initTime - length > BIT)&&
+						((i+combNum) < queue.size())){
 					f << "r16 ";
 					length = 0;
 				}
 			}
+		}
 /* 2) Add necessary amount of full pauses */
+		if ((int)(queue[i+combNum].initTime) !=
+				(int)(queue[i].initTime + queue[i].duration)) {
 			if (int(queue[i+combNum].initTime) -
 					(int)(queue[i].initTime + queue[i].duration +
 					pauseTaken) > 1) {
@@ -425,9 +440,8 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 				}
 /* Case when we put not enough notes in file to make a full tact */
 				if ((int)(queue[i].initTime + queue[i].duration) + 1 -
-						(queue[i].initTime + queue[i].duration -
-						(int)(queue[i].initTime + queue[i].duration)) -
-						lastLength > BIT) {
+						queue[i].initTime - queue[i].duration -
+						lastLength > (2*BIT)) {
 					f << "r16 ";
 				}
 			}
@@ -444,7 +458,7 @@ int main()
 	Notes notes;
 	try {
 		notes.initialize("E:/Programs/Qt/Projects/note_generator/"
-						 "C-E-G-E-C-G-E-D.wav");
+						 "CScale_1.wav");
 	}
 	catch (Exception & e) {
 		cout << e.getErrorMessage() << endl;
