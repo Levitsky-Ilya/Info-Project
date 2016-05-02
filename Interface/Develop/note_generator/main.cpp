@@ -57,7 +57,7 @@ vector<struct Note> breaker(vector<struct Note> & queue)
 /* Creating list with time of notes' "starts", "ends"
  * and also with all integer values of time.
  */
-	list<float> noteTiming;	
+	list<float> noteTiming;
 	for (size_t i = 0; i < queue.size(); i++ ) {
 		noteTiming.push_back(queue[i].initTime);
 		noteTiming.push_back(queue[i].initTime + queue[i].duration);
@@ -200,16 +200,11 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 
 	int combNum = 0; //for tracing an amount of notes taken at single step
 	bool firstPause = true; //flag for pauses in first music tact
+	const float BIT = 0.03125;
 
 /* Deleting notes that take less than 1/32 from whole */
 	for (unsigned int i = 0; i < queue.size(); i++) {
-		const float BIT = 0.03125;
 		if (queue[i].duration < BIT) {
-			if ((queue[i].initTime == (int)queue[i].initTime)&&
-					((i+1) < queue.size())) {
-				queue[i+1].initTime -= queue[i].duration;
-				queue[i+1].duration += queue[i].duration;
-			}
 			for (size_t num = i; num < queue.size() - 1; num++) {
 				queue[num] = queue[num+1];
 			}
@@ -221,9 +216,6 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 //Will be cleared if it's not a chord
 		string name = "< ";
 		vector<int> freqArray;
-		const float BIT = 0.03125;
-
-
 
 // Pause in beginning of first music tact
 		for (auto it = note_pause_list.begin();
@@ -339,11 +331,13 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 			f << ") ";
 		}
 
-/* Here pauses between note are being added. */
+/* Here pauses between notes are being added. */
 		float pauseTaken = 0;
 /* If the next note is in different tact, we need to do several things */
-		if ((int)(queue[i+combNum].initTime) !=
-				(int)(queue[i].initTime + queue[i].duration)) {
+		if ((int)(queue[i+combNum].initTime)!=
+				(int)(queue[i].initTime + queue[i].duration)&&
+				(queue[i+combNum].initTime - queue[i].initTime -
+				queue[i].duration > 2*BIT)) {
 /* 1) Write pause between our note and start of the next tact */
 			for (auto it = note_pause_list.begin();
 					it != note_pause_list.end(); ++it) {
@@ -353,28 +347,21 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 					f << it->pauseName;
 					pauseTaken += 1 - queue[i].initTime - queue[i].duration
 						+ (int)(queue[i].initTime + queue[i].duration);
+					while (length > 1) {
+						length--;
+					}
 					length += it->pauseDur;
 				}
 			}
-		}
 /* Case then we don't put enough notes to make a full tact */
-		if ((int)queue[i+combNum].initTime ==
-				queue[i+combNum].initTime) {
-			if (queue[i].initTime + queue[i].duration ==
+			if ((int)queue[i+combNum].initTime ==
 					queue[i+combNum].initTime) {
-				f << "~ " + name + "16 ";
-				length = 0;
-			} else {
-				if ((queue[i+combNum].initTime - length > BIT)&&
-						((i+combNum) < queue.size())){
+				if (queue[i+combNum].initTime - length > BIT) {
 					f << "r16 ";
 					length = 0;
 				}
 			}
-		}
 /* 2) Add necessary amount of full pauses */
-		if ((int)(queue[i+combNum].initTime) !=
-				(int)(queue[i].initTime + queue[i].duration)) {
 			if (int(queue[i+combNum].initTime) -
 					(int)(queue[i].initTime + queue[i].duration +
 					pauseTaken) > 1) {
@@ -426,6 +413,27 @@ void drawNote(vector<struct Note> & queue, ofstream & f)
 					}
 				}
 			}
+			while (length > 1) {
+				length--;
+			}
+/*
+ * If the note is in next tact and our note is not being prolonged in it,
+ * then, if we have supersmall pause between notes, and we have a need
+ * to add it (this is decided by value of "length" parameter), we place a pause
+ */
+			if (((int)(queue[i+combNum].initTime) != (int)(queue[i].initTime))&&
+					(((int)(queue[i+combNum].initTime) -
+					(int)(queue[i].initTime) - length) <= (2*BIT))&&
+					(((int)(queue[i+combNum].initTime) -
+					(int)(queue[i].initTime) - length) > 0)&&
+					(queue[i+combNum].initTime - queue[i].initTime -
+					queue[i].duration < BIT)) {
+				f << "r16 ";
+				for (size_t m = 0; m < tmp.size(); m++) {
+					tmp[m] = 0;
+				}
+				length = 0;
+			}
 /* Adding small pauses at the end of notes */
 			if (i == queue.size() - 1) {
 				float lastLength;
@@ -458,7 +466,7 @@ int main()
 	Notes notes;
 	try {
 		notes.initialize("E:/Programs/Qt/Projects/note_generator/"
-						 "CScale_1.wav");
+						 "C-E-G-E-C-G-E-D.wav");
 	}
 	catch (Exception & e) {
 		cout << e.getErrorMessage() << endl;
@@ -476,64 +484,6 @@ int main()
 			noteVectN.push_back(noteVect[i]);
 		}
 	}
-
-	/*Note note_1;
-	note_1.nNote = 39;
-	note_1.duration = 1.5f;
-	note_1.initTime = 2.5;
-
-	Note note_2;
-	note_2.nNote = 47;
-	note_2.duration = 1.021f;
-	note_2.initTime = 2.5;
-
-	Note note_3;
-	note_3.nNote = 47;
-	note_3.duration = 0.3f;
-	note_3.initTime = 2.521;
-
-	Note note_4;
-	note_4.nNote = 43;
-	note_4.duration = 3.5f;
-	note_4.initTime = 5.0;
-
-	Note note_5;
-	note_5.nNote = 45;
-	note_5.duration = 2.68f;
-	note_5.initTime = 5.5;
-
-	Note note_6;
-	note_6.nNote = 37;
-	note_6.duration = 0.25f;
-	note_6.initTime = 6.8;
-
-
-	Note note_7;
-	note_7.nNote = 25;
-	note_7.duration = 0.25f;
-	note_7.initTime = 0;
-
-	Note note_8;
-	note_8.nNote = 35;
-	note_8.duration = 3.3f;
-	note_8.initTime = 0.5;
-
-	Note note_9;
-	note_9.nNote = 28;
-	note_9.duration = 1.0f;
-	note_9.initTime = 1.5;
-
-	vector<struct Note> noteVectN;
-	noteVectN.push_back(note_1);
-	noteVectN.push_back(note_2);
-	noteVectN.push_back(note_3);
-	noteVectN.push_back(note_4);
-	noteVectN.push_back(note_5);
-	noteVectN.push_back(note_6);
-	vector<struct Note> noteVectL;
-	noteVectL.push_back(note_7);
-	noteVectL.push_back(note_8);
-	noteVectL.push_back(note_9);*/
 
 	breaker(noteVectN);
 	breaker(noteVectL);
