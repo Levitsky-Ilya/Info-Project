@@ -124,7 +124,7 @@ void Notes::generateMidView(vector<Note>& notesOut)
     }
     fout.close();
 #endif
-
+    getMaxAmpl();
     indentifyPeaks();
 
     notesFromPeaks(notesOut);
@@ -192,6 +192,18 @@ void Notes::Block::freqToNote(const float * const outFft,
     return;
 }
 
+void Notes::getMaxAmpl()
+{
+
+    for (int j = 0; j < NUMBER_OF_BLOCKS; j++) {
+        unsigned int size = blocks[j].block.size();
+        for (unsigned int i = 0; i < size; i++) {
+            if(blocks[j].block[i].maxAmpl > maxAmplitude)
+                maxAmplitude = blocks[j].block[i].maxAmpl;
+        }
+    }
+}
+
 void Notes::indentifyPeaks()
 {
     unsigned int size = blocks[0].block.size();
@@ -204,7 +216,7 @@ void Notes::indentifyPeaks()
         //and last notes of elder block
         for (int j = 0; j < NUMBER_OF_BLOCKS; j++) {
             if (i % (1 << j) == 0) {
-                blocks[j].indentifyPeaks(i >> j);
+                blocks[j].indentifyPeaks(i >> j, maxAmplitude);
             }
         }
         //because of it I solve this problem there:
@@ -212,12 +224,12 @@ void Notes::indentifyPeaks()
     }
 }
 
-void Notes::Block::indentifyPeaks(unsigned int nTime)
+void Notes::Block::indentifyPeaks(unsigned int nTime, float maxAmplitude)
 {
     assert(nTime < block.size());
 
     for (int i = lastNote; i >= firstNote; i--) {
-        if (block[nTime][i] <= PEAK_MINIMUM ||
+        if (block[nTime][i] <= maxAmplitude / 2 ||
                 block[nTime][i] < block[nTime].maxAmpl - DELTA_PEAK) {
             block[nTime][i] = -INFINITY;
         }
