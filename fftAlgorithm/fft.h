@@ -12,6 +12,10 @@
 //   Include complex numbers header
 #include "complex.h"
 
+#define HAM_CONST1 0.54
+#define HAM_CONST2 0.46
+#define GAUSSE_CONST 0.5
+
 class CFFT
 {
 public:

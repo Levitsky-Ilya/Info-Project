@@ -1,45 +1,94 @@
+/**
+ * notes.h
+ *
+ * Description: Notes class header.
+ *
+ * @author Maria Kataeva mariya.katayeva@phystech.edu
+ * Copyright 2016
+ **/
+
 #ifndef NOTES_H
 #define NOTES_H
 
-#include "wav_sound.h"
-#include "../fftAlgorithm/fft.h"
+#include <array>
 
-const int NUMBER_OF_NOTES = 84; //do I have 84 notes? Really???
-enum TypeFrame {WITH_NULLS, WITHOUT_NULLS};
+#include "wav_sound.h"
+#include "fft.h"
+#include "frequencies_for_notes.h"
+
+#define NUMBER_OF_BLOCKS 3 // type 4 to use four blocks
+
+const float DELTA_PEAK = 1.0; /// attention!!!
+const float MIN_DURATION = 0.1; //help to filter noises
+
 
 struct Note
 {
-    double freq;
     int nNote;
-    int duration;
-    double initTime;
+    float duration;
+    float initTime;
 };
 
-
-struct NotesList
+struct NoteBlock
 {
-    double notesList[NUMBER_OF_NOTES];
-    double diffFreq;
-    int numFirstNote;
-    int numLastNote;
+    vector<Note> noteBlock;
+    int current;
+    int size;
+};
+
+struct AmplNotes
+{
+    array<float, NUMBER_OF_NOTES> amplNotes;
+    float maxAmpl;
+    float& operator[] (int n) {
+        return amplNotes[n];
+    }
 };
 
 class Notes
 {
 public:
     Notes();
-    void generateMidView(const char* fileName);
+    void initialize(string fileName);
+    void generateMidView(vector<Note>& notesOut);
 
-    vector<Note> notesOut;
+    bool dump(ostream& fout);
+    bool dumpInitAmpl(ostream& fout);
 private:
-    vector<double> notesFreqList; // initial list of notes
-    vector<NotesList> partFirst;
-    vector<NotesList> partSecond;
-    int maxNote(NotesList& ampl);
-    void executeBlock(unsigned int frameSize, int sampleRate,
-                      int firstNote, int lastNote, TypeFrame typeFrame,
-                      vector<double>& amplTime);
-    void freqToNote(double * const outFft, int num, NotesList &amplNotes);
+    //enum TypeFrame {SIMPLE, WITH_OVERLAP};
+    struct Block
+    {
+        vector<AmplNotes> block;
+        unsigned int frameSize;
+        int firstNote;
+        int lastNote;
+        float diffFreq;
+        //TypeFrame typeFrame;
+
+        void execute(const vector<float> & amplTime);
+        void freqToNote(const float* const outFft,
+                        AmplNotes & notes);
+        void indentifyPeaks(unsigned int nTime, float maxAmplitude);
+        void peaksToNotes(vector<Note>& notes);
+        bool dump(unsigned int nTime, ostream& fout);
+    };
+
+    float initDiffFreq[NUMBER_OF_NOTES - 1];
+
+    vector<float> amplTime;
+    Block blocks[NUMBER_OF_BLOCKS];
+
+    float maxAmplitude;
+    void getMaxAmpl();
+
+    void indentifyPeaks();
+    void complementBlocks(unsigned int nTime);
+    void checkPeaks(unsigned int nTime);
+
+    void notesFromPeaks(vector<Note>& notesOut);
+
+    int minBlock(NoteBlock notes[]);
+    //int maxNote(AmplNotes & ampl);
 };
 
 #endif // NOTES_H
