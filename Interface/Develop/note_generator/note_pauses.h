@@ -14,6 +14,4 @@ struct NotePause {
 
 extern list<NotePause> note_pause_list;
 
-
 #endif // NOTE_PAUSES_H
-

@@ -1,6 +1,5 @@
 #include "note_pauses.h"
 
-
 list<NotePause> note_pause_list = {
 	{0.0625,       "r16 "}, {0.1250,     "r8 "},
 	{0.1875,       "r8. "}, {0.2500,     "r4 "},

@@ -6,9 +6,8 @@
 #include <map>
 
 using namespace std;
-//using namespace pair;
+
 /* Giving it's own text equivalent for each frequency */
 extern map<int, string> freqMap;
 
 #endif // FREQ_NAMES_H
-

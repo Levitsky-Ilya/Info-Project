@@ -39,25 +39,25 @@ int main()
 	noteVectN.breaker();
 	noteVectL.breaker();
 
-	ofstream f("E:/Programs/Lilypond/file.ly");
+	ofstream file("E:/Programs/Lilypond/file.ly");
 
-	f << "normal = \\new Staff { \n";
+	file << "normal = \\new Staff { \n";
 
-	noteVectN.drawStaff(noteVectL, f);
+	noteVectN.drawStaff(noteVectL, file);
 
-	f << "bass = \\new Staff { \n";
-	f << "\\clef \"bass\" \n";
+	file << "bass = \\new Staff { \n";
+	file << "\\clef \"bass\" \n";
 
-	noteVectL.drawStaff(noteVectN, f);
+	noteVectL.drawStaff(noteVectN, file);
 
-	f << "{\n";
-	f << "\\new PianoStaff << \n";
-	f << "\\normal \n";
-	f << "\\bass \n";
-	f << ">> \n";
-	f << "} \n";
+	file << "{\n";
+	file << "\\new PianoStaff << \n";
+	file << "\\normal \n";
+	file << "\\bass \n";
+	file << ">> \n";
+	file << "} \n";
 
-	f.close();
+	file.close();
 
 	return 0;
 }

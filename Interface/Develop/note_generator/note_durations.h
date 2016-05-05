@@ -1,7 +1,6 @@
 #ifndef NOTE_DURATIONS
 #define NOTE_DURATIONS
 
-
 #include <iostream>
 #include <string>
 #include <list>
@@ -19,6 +18,4 @@ struct NoteDur {
 
 extern list<NoteDur> noteDurList;
 
-
 #endif // NOTE_DURATIONS
-

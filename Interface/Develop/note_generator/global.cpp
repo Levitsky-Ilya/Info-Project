@@ -12,7 +12,6 @@ bool near(float data, float num, float range1, float range2)
 	}
 }
 
-
 string writer(string part1, string part2, string part3, string wrName)
 {
 	if (part3 == "") {
