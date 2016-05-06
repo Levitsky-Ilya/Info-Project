@@ -49,6 +49,7 @@ class Notes
 public:
     Notes();
     void initialize(string fileName);
+    bool setSilenceLavel(float lavel);
     void generateMidView(vector<Note>& notesOut);
 
     bool dump(ostream& fout);
@@ -67,7 +68,7 @@ private:
         void execute(const vector<float> & amplTime);
         void freqToNote(const float* const outFft,
                         AmplNotes & notes);
-        void indentifyPeaks(unsigned int nTime, float maxAmplitude);
+        void indentifyPeaks(unsigned int nTime, float silenceLavel);
         void peaksToNotes(vector<Note>& notes);
         bool dump(unsigned int nTime, ostream& fout);
     };
@@ -77,7 +78,7 @@ private:
     vector<float> amplTime;
     Block blocks[NUMBER_OF_BLOCKS];
 
-    float maxAmplitude;
+    float silenceLavel;
     void getMaxAmpl();
 
     void indentifyPeaks();
