@@ -97,6 +97,12 @@ private:
     unsigned long seekToData;
 
     void fillVector(vector<float> &amplTime);
+    void* fillVectorConcurr (char *buff,
+                             vector<float> &amplTime,
+                             unsigned long nBlocks,
+                             unsigned long blockAlign,
+                             unsigned short depth,
+                             unsigned long index);
     float strtoampl(const char* str, const unsigned short depth);
 };
 

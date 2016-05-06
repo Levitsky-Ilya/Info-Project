@@ -23,10 +23,8 @@
 /*#include <fstream> <- curently unused, old segment is commented.
  * DELETE??
  */
-/*#include <iomanip> <- curently unused, needed for correct display of duration.
- * NEEDED?
- */
 
+#include <thread>
 #include <iostream>     //cout, endl
 /**
  * When TIME == 1, time spent on reading the file and filling the vector
@@ -41,8 +39,8 @@
 using namespace std;
 
 const int BITS_IN_BYTE = 8;
-const int SECONDS_IN_MINUTE = 60;
 const long SIZE_OF_LONG = sizeof(unsigned long);
+const int THREADS_MAX = thread::hardware_concurrency();
 
 /** Constructor **/
 WavFile::WavFile ()
@@ -175,7 +173,6 @@ void WavFile::initialize (const char* fileName)
 
     fclose(file);
     delete [] subchunkId;
-    //return 0;       ///WHAT SHOULD RETURN?
 }
 
 unsigned short WavFile::getRate()
@@ -193,45 +190,12 @@ unsigned short WavFile::getbitsPerSample()
     return fmtSubchunk.bitsPerSample;
 }
 
-/** This version of getAmplitudeArray(..) is single threaded.
+/** This version of getAmplitudeArray(..) is multithreaded.
  *  It's out is vector of one channel's amlitudes.
  *  fread(..) from file to big buffer, from buffer get amplitudes.
  */
 void WavFile::getAmplitudeArray (vector<float> &amplTime)
 {
-    /*
-    ifstream file(fileName_);
-    streambuf* pbuf = file.rdbuf();
-    unsigned long nSamples = header.subchunk2Size/header.blockAlign;
-    unsigned short channels = getChannels();
-    */
-
-    /*
-    union Block {
-      unsigned short sample;
-      char buffer[2 + 1] = {0};     //change 2 to bytesPerSample!
-    } block;
-    unsigned short bytesPerSample = header.bitsPerSample/BITS_IN_BYTE;
-    pbuf->pubseekpos(sizeof(WavHeader));
-
-    cout << "Samples " << nSamples << endl;
-    system("pause");
-
-    for(unsigned int i = 0; i < nSamples; i++) {
-
-      pbuf->sgetn(block.buffer, bytesPerSample);
-      cout << "Sample " << block.sample << endl;
-      //cout << "Buffer " << block.buffer << endl;
-      amplTime.push_back(block.sample);
-      cout << "i " << i << endl;
-      if(i == nSamples/2) system("pause");
-
-      for(unsigned short j = 1; j < channels; j++)
-        pbuf->sgetn(block.buffer, bytesPerSample);
-
-    }
-    */
-
     if(fmtSubchunk.bitsPerSample % BITS_IN_BYTE != 0 ||
        fmtSubchunk.bitsPerSample > sizeof(int) * BITS_IN_BYTE ||
        fmtSubchunk.bitsPerSample < sizeof(char) * BITS_IN_BYTE)
@@ -256,16 +220,14 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
 }
 
 /** Input: any vector to replace its content
- *  Algorithm: Creates buffer sized about one page.
- *             Divides file into pages.
+ *  Algorithm: Creates buffer sized of whole data.
+ *             Copies data from file to buffer.
  *             Reads from buffer and fills vector
  *             with amplitudes calculated by strtoampl(..).
  *  Output: given vector is filled with amplitudes.
  */
 void WavFile::fillVector (vector<float> &amplTime)
 {
-    amplTime.clear();
-
     errno_t err;
     err = fopen_s(&file, fileName_.c_str(), "rb");
     if (err)
@@ -287,24 +249,49 @@ void WavFile::fillVector (vector<float> &amplTime)
     unsigned long sizeOfData = dataSubchunk.subchunk2Size;
     char* buff = new char[sizeOfData];
     unsigned long blockAlign = fmtSubchunk.blockAlign;
+    unsigned long nBlocks = sizeOfData/blockAlign;
 
-    float tmpAmplitude;
+    amplTime.clear();
+    amplTime.resize(nBlocks);
+
     fread(buff, sizeOfData, 1, file);
-    /* Reading only first channel. */
-    for(unsigned long i = 0; i < sizeOfData; i += blockAlign) {
-#if SHOW_AMPLITUDES
-      cout << "At " << i << " out of " << sizeOfData  << ".\t";
-#endif
-
-      tmpAmplitude = strtoampl(buff + i, depth); //Good buff + i???
-      amplTime.push_back(tmpAmplitude);
-
-#if SHOW_AMPLITUDES
-      cout << tmpAmplitude << endl;
-#endif
-    }
     fclose(file);
+
+    thread* thids = new thread[THREADS_MAX - 1];
+    for (int i = 0; i < THREADS_MAX - 1; i++)
+      thids[i] = thread(fillVectorConcurr, this, buff, ref(amplTime),
+                        nBlocks, blockAlign, depth, i);
+
+    fillVectorConcurr(buff, amplTime,
+                      nBlocks, blockAlign, depth, THREADS_MAX - 1);
+
+    for (int i = 0; i < THREADS_MAX - 1; i++)
+      thids[i].join();
+
     delete [] buff;
+}
+
+/** Input: buffer to read data from,
+ *         vector to fill with amplitudes,
+ *         index of thread.
+ *  Algorithm: each thread reads from buffer and fills vector.
+ *         Threads are working independantly, each with it own offset(index).
+ *  Output: given vector has his elements with a certain offset
+ *         filled with amplitudes.
+ */
+void* WavFile::fillVectorConcurr (char* buff,
+                                  vector<float>& amplTime,
+                                  unsigned long nBlocks,
+                                  unsigned long blockAlign,
+                                  unsigned short depth,
+                                  unsigned long index)
+{
+    float tmpAmplitude;
+    for(unsigned long i = index; i < nBlocks; i+= THREADS_MAX) {
+      tmpAmplitude = strtoampl(buff + i*blockAlign, depth);
+      amplTime[i] = tmpAmplitude;
+    }
+    return NULL;
 }
 
 /** Additional method to print content of vector*/
@@ -349,6 +336,7 @@ float WavFile::strtoampl(const char* str, const unsigned short depth)
        a.amplitude -= 2*maxAmplitude;   //simulating setting negative bit
 
 #if SHOW_AMPLITUDES
+    //this section might not work properly if executed concurrently!
     cout << a.data[0] << '.' <<
             a.data[1] << '.' <<
             a.data[2] << '.' <<
