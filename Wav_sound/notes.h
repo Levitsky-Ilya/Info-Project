@@ -18,7 +18,6 @@
 
 #define NUMBER_OF_BLOCKS 3 // type 4 to use four blocks
 
-const float PEAK_MINIMUM = 20.0; /// attention!!! I can't define the lavel of silence now!
 const float DELTA_PEAK = 1.0; /// attention!!!
 
 
@@ -50,6 +49,7 @@ class Notes
 public:
     Notes();
     void initialize(string fileName);
+    bool setSilenceLavel(float lavel);
     void generateMidView(vector<Note>& notesOut);
 
     bool dump(ostream& fout);
@@ -68,7 +68,7 @@ private:
         void execute(const vector<float> & amplTime);
         void freqToNote(const float* const outFft,
                         AmplNotes & notes);
-        void indentifyPeaks(unsigned int nTime);
+        void indentifyPeaks(unsigned int nTime, float silenceLavel);
         void peaksToNotes(vector<Note>& notes);
         bool dump(unsigned int nTime, ostream& fout);
     };
@@ -77,6 +77,9 @@ private:
 
     vector<float> amplTime;
     Block blocks[NUMBER_OF_BLOCKS];
+
+    float silenceLavel;
+    void getMaxAmpl();
 
     void indentifyPeaks();
     void complementBlocks(unsigned int nTime);
