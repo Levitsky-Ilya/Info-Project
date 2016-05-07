@@ -48,7 +48,7 @@ void Notes::initialize(string fileName)
     WavFile melody;
     melody.initialize(fileName.c_str());
     unsigned int sampleRate = melody.getRate();
-
+    //noiseCoef = 0.5;
     if (sampleRate == 0) {
         string msg = "Failed to read headers of file: " + fileName;
         throw NotesExceptions::Connect(msg);
@@ -229,7 +229,7 @@ void Notes::Block::indentifyPeaks(unsigned int nTime, float maxAmplitude)
     assert(nTime < block.size());
 
     for (int i = lastNote; i >= firstNote; i--) {
-        if (block[nTime][i] <= maxAmplitude / 2 ||
+        if (block[nTime][i] <= maxAmplitude /2 ||
                 block[nTime][i] < block[nTime].maxAmpl - DELTA_PEAK) {
             block[nTime][i] = -INFINITY;
         }

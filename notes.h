@@ -11,7 +11,6 @@
 #define NOTES_H
 
 #include <array>
-
 #include "wav_sound.h"
 #include "fft.h"
 #include "frequencies_for_notes.h"
@@ -27,6 +26,14 @@ struct Note
     int nNote;
     float duration;
     float initTime;
+    bool operator< (const Note & rhs) {
+        return (initTime == rhs.initTime ?
+                    duration == rhs.duration ?
+                        nNote < rhs.nNote :
+                        duration < rhs.duration :
+                    initTime < rhs.initTime
+                );
+    }
 };
 
 struct NoteBlock
@@ -80,7 +87,7 @@ private:
 
     float maxAmplitude;
     void getMaxAmpl();
-
+   // static float noiseCoef;
     void indentifyPeaks();
     void complementBlocks(unsigned int nTime);
     void checkPeaks(unsigned int nTime);
