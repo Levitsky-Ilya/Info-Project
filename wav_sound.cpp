@@ -45,7 +45,7 @@ const int THREADS_MAX = thread::hardware_concurrency();
 /** Constructor **/
 WavFile::WavFile ()
 {
-    file = NULL;        //NULL or 0?)
+    file = NULL;
     fileName_ = "";
     seekToData = 0;
 }
@@ -257,7 +257,7 @@ void WavFile::fillVector (vector<float> &amplTime)
     fread(buff, sizeOfData, 1, file);
     fclose(file);
 
-    thread* thids = new thread[THREADS_MAX - 1];
+    thread thids[THREADS_MAX - 1];
     for (int i = 0; i < THREADS_MAX - 1; i++)
       thids[i] = thread(fillVectorConcurr, this, buff, ref(amplTime),
                         nBlocks, blockAlign, depth, i);
