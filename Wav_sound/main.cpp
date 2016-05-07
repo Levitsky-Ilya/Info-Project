@@ -9,10 +9,10 @@
 int main()
 {
     Notes perem;
-    perem.setSilenceLavel(0.7);
+    cout << perem.setSilenceLavel(0.7) << endl;
 
     try {
-    perem.initialize("C:\\Users\\Admin\\Downloads\\sounds\\Am-C7-Em-chiptune.wav");
+    perem.initialize("C:\\Users\\Admin\\Downloads\\sounds\\chords.wav");
     //perem.initialize("C:\\InfoProject\\Info-Project\\piano_A3.wav");
     } catch (NotesExceptions::Connect &e) {
         cout << e.what() << endl;
