@@ -21,11 +21,11 @@
 const float DELTA_PEAK = 1.0; /// attention!!!
 
 
-struct Note
+struct Note //delete silence
 {
     int nNote;
-    float duration;
-    float initTime;
+    int duration;
+    unsigned int initTime;
 };
 
 struct NoteBlock

@@ -326,10 +326,24 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
     }
 
     notesOut.resize(outSize);
+    unsigned int initTime = 0;
+    if (outSize > 0) {
+        int a = minBlock(notes);
+        notesOut[0] = notes[a].noteBlock[notes[a].current];
+        notesOut[0].duration *= (1 << a);
 
-    for (unsigned int i = 0; i < outSize; i++) {
+        initTime = notesOut[0].initTime * (1 << a);
+        notesOut[0].initTime = 0;
+
+        notes[a].current++;
+    }
+
+    for (unsigned int i = 1; i < outSize; i++) {
         int a = minBlock(notes);
         notesOut[i] = notes[a].noteBlock[notes[a].current];
+        notesOut[i].duration *= (1 << a);
+        notesOut[i].initTime *= (1 << a);
+        notesOut[i].initTime -= initTime;
         notes[a].current++;
     }
 }
@@ -349,10 +363,10 @@ int Notes::minBlock(NoteBlock notes[])
         }
         if (notes[i].current == notes[i].size) {
             notes[i].current --;
-            notes[i].noteBlock[notes[i].current].initTime = INFINITY;
+            notes[i].noteBlock[notes[i].current].initTime = UINT_MAX;
         }
-        if (notes[i].noteBlock[notes[i].current].initTime <
-                notes[min].noteBlock[notes[min].current].initTime) {
+        if (notes[i].noteBlock[notes[i].current].initTime * (1 << i) <
+                notes[min].noteBlock[notes[min].current].initTime * (1 << min)) {
             min = i;
         }
     }
@@ -370,7 +384,7 @@ void Notes::Block::peaksToNotes(vector<Note>& notes)
                 Note note;
 
                 note.nNote = i;
-                note.initTime = nTime / diffFreq;
+                note.initTime = nTime;
                 int dur = 1;
                 while (nTime + dur < size &&
                        block[nTime + dur][i] > -INFINITY) {
@@ -378,7 +392,7 @@ void Notes::Block::peaksToNotes(vector<Note>& notes)
                     block[nTime + dur][i] = -INFINITY;
                     dur++;
                 }
-                note.duration = dur / diffFreq;
+                note.duration = dur;
                 notes.push_back(note);
             }
 
