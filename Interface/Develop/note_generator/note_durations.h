@@ -12,7 +12,7 @@
  * Function "writer" is being used for correct displaying.
  */
 struct NoteDur {
-	float noteDur;
+	unsigned int noteDur;
 	std::function<string(string)> func;
 };
 

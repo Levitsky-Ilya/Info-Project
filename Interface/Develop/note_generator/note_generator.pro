@@ -25,5 +25,6 @@ HEADERS += \
     note_pauses.h \
     global.h \
     queue.h \
-    note_durations.h
+    note_durations.h \
+    ../additional_files/exceptions.h
 

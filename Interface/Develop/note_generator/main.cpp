@@ -24,7 +24,7 @@ int main()
 	Notes notes;
 	try {
 		notes.initialize("E:/Programs/Qt/Projects/note_generator/"
-						 "C-E-G-E-C-G-E-D.wav");
+						 "chords.wav");
 	}
 	catch (Exception & e) {
 		cout << e.getErrorMessage() << endl;

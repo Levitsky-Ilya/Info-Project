@@ -8,7 +8,7 @@ using namespace std;
 
 /* Giving it's own text equivalent for each pause duration */
 struct NotePause {
-	float pauseDur;
+	unsigned int pauseDur;
 	string pauseName;
 };
 

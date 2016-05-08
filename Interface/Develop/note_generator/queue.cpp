@@ -38,13 +38,13 @@ vector<struct Note> Queue::breaker()
 /* Creating list with time of notes' "starts", "ends"
  * and also with all integer values of time.
  */
-	list<float> noteTiming;
+	list<unsigned int> noteTiming;
 	for (size_t i = 0; i < queue.size(); i++ ) {
 		noteTiming.push_back(queue[i].initTime);
 		noteTiming.push_back(queue[i].initTime + queue[i].duration);
 	}
-	for (float bar = 1; bar <= 1000; bar++) {
-		noteTiming.push_back(bar);
+	for (int num = 16; num <= 16000; num += 16) {
+		noteTiming.push_back(num);
 	}
 	noteTiming.sort();
 	noteTiming.unique();
@@ -93,29 +93,33 @@ void Queue::drawStaff (const Queue & comparedVect, ofstream & file)
 /* Drawing pauses at the beginning fot the same length of staffs*/
 	int beginPauseCounter = 0;
 	if ((queue.size() != 0)&&(comparedVect.size() != 0)) {
-		while ((int)queue[0].initTime - (int)comparedVect[0].initTime -
-			   beginPauseCounter >= 1) {
+		while ((queue[0].initTime&(~15)) - (comparedVect[0].initTime&(~15)) -
+			   beginPauseCounter >= 16) {
 			file << "r1 ";
-			beginPauseCounter++;
+			beginPauseCounter += 16;
 		}
+#if 0
 /* We have to make new vector without these pauses for algorythm to work */
 		for (size_t i = 0; i < queue.size(); i++) {
 			queue[i].initTime -= beginPauseCounter;
 		}
 	}
-
+#endif
+	}
 	drawNote(file);
 
 /* Drawing pauses in the end for the same length of staffs */
 	int endPauseCounter = 0;
-	if ((comparedVect.size() != 0)&&(queue.size() != 0)) {
-		while ((int)(comparedVect[comparedVect.size()-1].initTime +
-				comparedVect[comparedVect.size()-1].duration) -
-				(int)(queue[queue.size()-1].initTime +
-				queue[queue.size()-1].duration) -
-				endPauseCounter >= 1) {
+	if ((comparedVect.size() != 0)&&(queue.size() != 0)&&
+			(((comparedVect[comparedVect.size()-1].initTime +
+			comparedVect[comparedVect.size()-1].duration) % 16) != 0)) {
+		while (((comparedVect[comparedVect.size()-1].initTime + 16 +
+				comparedVect[comparedVect.size()-1].duration)&(~15)) -
+				((queue[queue.size()-1].initTime +
+				queue[queue.size()-1].duration)&(~15)) -
+				endPauseCounter >= 16) {
 			file << "r1 ";
-			endPauseCounter++;
+			endPauseCounter += 16;
 		}
 	}
 
@@ -127,7 +131,6 @@ void Queue::drawNote(ofstream & file)
 {
 	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 
-	deleteSupersmall();
 	firstPauseChecker(file);
 
 /*
@@ -141,35 +144,16 @@ void Queue::drawNote(ofstream & file)
 
 	for (size_t i = 0; i < queue.size(); ) {
 
-		float length = printChord(lastChordFreqs, i, combNum, file, length);
-/*
- * Check if note is in different beat and the difference
- * in timing is more than 1/16
- */
-		if (((int)(queue[i+combNum].initTime)!=
-				(int)(queue[i].initTime + queue[i].duration))&&
-				(queue[i+combNum].initTime - queue[i].initTime -
-				queue[i].duration > 2*BIT)) {
-			printNextBeatPause(lastChordFreqs, length, i, combNum, file);
+		printChord(lastChordFreqs, i, combNum, file);
+		if (((queue[i+combNum].initTime)&(~15)) !=
+				((queue[i].initTime + queue[i].duration)&(~15))) {
+			printNextBeatPause(lastChordFreqs, i, combNum, file);
 		} else {
-			printBeatPause(lastChordFreqs, length, i, combNum, file);
-			checkEnd(length, i, file);
+			printBeatPause(lastChordFreqs, i, combNum, file);
+			checkEnd(i, file);
 		}
-		i = i + combNum;
-	}
-}
-//==============================================================================
-void Queue::deleteSupersmall()
-{
-	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 
-	for (unsigned int i = 0; i < queue.size(); i++) {
-		if (queue[i].duration < BIT) {
-			for (size_t num = i; num < queue.size() - 1; num++) {
-				queue[num] = queue[num+1];
-			}
-			queue.pop_back();
-		}
+		i = i + combNum;
 	}
 }
 //==============================================================================
@@ -180,15 +164,15 @@ void Queue::firstPauseChecker(ofstream & file)
 	if (queue.size() != 0) {
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
-			if (near(it->pauseDur, queue[0].initTime, BIT, BIT)) {
+			if (it->pauseDur == queue[0].initTime) {
 				file << it->pauseName;
 			}
 		}
 	}
 }
 //==============================================================================
-float Queue::printChord(vector<int> & lastChordFreqs, size_t & i,
-		int & combNum, ofstream & file, float &length)
+void Queue::printChord(vector<int> & lastChordFreqs, size_t & i,
+		int & combNum, ofstream & file)
 {
 	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 //Will be cleared if it's not a chord
@@ -197,8 +181,7 @@ float Queue::printChord(vector<int> & lastChordFreqs, size_t & i,
 /* Checking if we have chord and, if so, putting it in freqArray */
 	int k = 0;
 	while (((i+k) < queue.size())&&
-		  (queue[i+k].initTime == queue[i].initTime)&&
-		   (queue[i+k].duration >= BIT)) {
+		  (queue[i+k].initTime == queue[i].initTime)) {
 		freqArray.push_back(queue[i+k].nNote);
 		k++;
 	}
@@ -226,8 +209,7 @@ float Queue::printChord(vector<int> & lastChordFreqs, size_t & i,
 */
 	k = 0;
 	if (((i+k) < queue.size())&&
-			(queue[i].initTime == queue[i+1].initTime)&&
-			(queue[i+k].duration >= BIT)) {
+			(queue[i].initTime == queue[i+1].initTime)) {
 		file << "< ";
 		while (((i+k) < queue.size())&&
 				(queue[i].initTime == queue[i+k].initTime)) {
@@ -241,112 +223,66 @@ float Queue::printChord(vector<int> & lastChordFreqs, size_t & i,
 		name += ">";
 		lastChordFreqs = freqArray;
 	} else {
-		if (queue[i].duration >= BIT) {
-			file << freqMap[queue[i].nNote];
-			name = freqMap[queue[i].nNote];
-			combNum = 1;
-			if (queue[i].nNote != queue[i+1].nNote) {
-				for (size_t m = 0; m < lastChordFreqs.size(); m++) {
-					lastChordFreqs[m] = 0;
-				}
-			} else {
-				lastChordFreqs = freqArray;
-			}
-		} else {
-			for (size_t m = 0; m < lastChordFreqs.size(); m++) {
-				lastChordFreqs[m] = 0;
-			}
-			combNum = 1;
-		}
+		file << freqMap[queue[i].nNote];
+		name = freqMap[queue[i].nNote];
+		combNum = 1;
+		lastChordFreqs = freqArray;
 	}
-	length = printDuration(name, length, i, file);
+	printDuration(name, i, file);
 	if (flag == false) {
 		file << ") ";
 	}
-	return length;
 }
 //==============================================================================
-float Queue::printDuration(string & name, float & length,
-		size_t &i, ofstream & file)
+void Queue::printDuration(string & name, size_t &i, ofstream & file)
 {
 	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 /*
 * Part, responsible for putting duration in file.
 * If the note duration quantity is bigger than 1, we have additional text.
 */
-	if (i == 0) {
-		length = 0;
-	}
-	if (queue[i].duration > 1) {
-		float full = 0;
-		while (queue[i].duration - full > 1) {
-			full++;
-			file << "1~ " + name;
-		}
-		for (auto it = noteDurList.begin(); it != noteDurList.end(); ++it) {
-			if (near(it->noteDur, queue[i].duration - full, BIT, BIT)) {
-				file << it->func(name);
-				length += it->noteDur + full;
-			}
-		}
-	} else {
-		for (auto it = noteDurList.begin(); it != noteDurList.end(); ++it) {
-			if (near(it->noteDur, queue[i].duration, BIT, BIT)) {
-				file << it->func(name);
-				length += it->noteDur;
-			}
+	for (auto it = noteDurList.begin(); it != noteDurList.end(); ++it) {
+		if (it->noteDur == queue[i].duration) {
+			file << it->func(name);
 		}
 	}
-	return length;
 }
 //==============================================================================
-void Queue::printNextBeatPause(vector<int> & lastChordFreqs, float & length,
+void Queue::printNextBeatPause(vector<int> & lastChordFreqs,
 		size_t & i, int & combNum, ofstream & file)
 {
 	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 
-	float pauseTaken = 0;
+	unsigned int pauseTaken = 0;
 /* 1) Write pause between our note and start of the next beat */
 	for (auto it = note_pause_list.begin();
 			it != note_pause_list.end(); ++it) {
-		if (near(it->pauseDur, 1 - queue[i].initTime -
-				queue[i].duration + (int)(queue[i].initTime +
-				queue[i].duration), BIT, BIT)) {
+		if (it->pauseDur == 16 - queue[i].initTime -
+				queue[i].duration + ((queue[i].initTime +
+				queue[i].duration)&(~15))) {
 			file << it->pauseName;
-			pauseTaken += 1 - queue[i].initTime - queue[i].duration
-				+ (int)(queue[i].initTime + queue[i].duration);
-			while (length > 1) {
-				length--;
-			}
-			length += it->pauseDur;
-		}
-	}
-/* Case then we don't put enough notes to make a full beat */
-	if ((int)queue[i+combNum].initTime ==
-			queue[i+combNum].initTime) {
-		if (queue[i+combNum].initTime - length > BIT) {
-			file << "r16 ";
-			length = 0;
+			pauseTaken += 16 - queue[i].initTime - queue[i].duration
+				+ ((queue[i].initTime + queue[i].duration)&(~15));
 		}
 	}
 /* 2) Add necessary amount of full pauses */
-	if (int(queue[i+combNum].initTime) -
-			(int)(queue[i].initTime + queue[i].duration +
-			pauseTaken) > 1) {
-		float full = 0;
+	if ((queue[i+combNum].initTime&(~15)) -
+			((queue[i].initTime + queue[i].duration +
+			pauseTaken)&(~15)) > 16) {
+		int full = 0;
 		while (((i+combNum) < queue.size())&&
-				((int)(queue[i+combNum].initTime) -
-				(int)(queue[i].initTime + queue[i].duration +
-				pauseTaken) - full >= 1)) {
-			full++;
+				((queue[i+combNum].initTime&(~15)) -
+				((queue[i].initTime + queue[i].duration +
+				pauseTaken)&(~15)) - full >= 16)) {
+			full += 16;
 			file << "r1 ";
 		}
 /* 3) Add pause between start of beat with next note and next note itself */
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
-			if (near(it->pauseDur, queue[i+1].initTime -
-					(int)(queue[i+1].initTime), BIT, BIT)&&
-					((i+1) < queue.size())) {
+			if (it->pauseDur == queue[i+combNum].initTime -
+					(queue[i+combNum].initTime&(~15))&&
+					((i+combNum) < queue.size())) {
 				file << it->pauseName;
 				for (size_t m = 0; m < lastChordFreqs.size(); m++) {
 					lastChordFreqs[m] = 0;
@@ -357,59 +293,39 @@ void Queue::printNextBeatPause(vector<int> & lastChordFreqs, float & length,
 /* Analogy for 2) and 3) if we don't have full pauses */
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
-			if (near(it->pauseDur,
-					queue[i+1].initTime - queue[i].initTime -
-					queue[i].duration - pauseTaken, BIT, BIT)&&
-					((i+1) < queue.size())) {
+			if ((it->pauseDur == queue[i+combNum].initTime - queue[i].initTime -
+					queue[i].duration - pauseTaken)&&
+					((i+combNum) < queue.size())) {
 				file << it->pauseName;
 				for (size_t m = 0; m < lastChordFreqs.size(); m++) {
 					lastChordFreqs[m] = 0;
 				}
 			}
+			for (size_t m = 0; m < lastChordFreqs.size(); m++) {
+				lastChordFreqs[m] = 0;
+			}
 		}
 	}
 }
 //==============================================================================
-void Queue::printBeatPause(vector<int> & lastChordFreqs, float & length,
+void Queue::printBeatPause(vector<int> & lastChordFreqs,
 		size_t & i, int & combNum, ofstream & file)
 {
 	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 /* If our note and the next one are in the same beat, the prosedure is simple */
 	for (auto it = note_pause_list.begin();
 			it != note_pause_list.end(); ++it) {
-		if (near(it->pauseDur, queue[i+combNum].initTime -
-				queue[i].initTime - queue[i].duration, BIT, BIT)) {
+		if (it->pauseDur == queue[i+combNum].initTime -
+				queue[i].initTime - queue[i].duration) {
 			file << it->pauseName;
-			length += it->pauseDur;
 			for (size_t m = 0; m < lastChordFreqs.size(); m++) {
 				lastChordFreqs[m] = 0;
 			}
 		}
 	}
-	while (length > 1) {
-		length--;
-	}
-/*
-* If the note is in next beat and our note is not being prolonged in it,
-* then, if we have supersmall pause between notes, and we have a need
-* to add it (this is decided by value of "length" parameter), we place a pause
-*/
-	if (((int)(queue[i+combNum].initTime) != (int)(queue[i].initTime))&&
-			(((int)(queue[i+combNum].initTime) -
-			(int)(queue[i].initTime) - length) <= (2*BIT))&&
-			(((int)(queue[i+combNum].initTime) -
-			(int)(queue[i].initTime) - length) > 0)&&
-			(queue[i+combNum].initTime - queue[i].initTime -
-			queue[i].duration < BIT)) {
-		file << "r16 ";
-		for (size_t m = 0; m < lastChordFreqs.size(); m++) {
-			lastChordFreqs[m] = 0;
-		}
-		length = 0;
-	}
 }
 //==============================================================================
-void Queue::checkEnd(float & length, size_t & i, ofstream & file)
+void Queue::checkEnd(size_t & i, ofstream & file)
 {
 	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 /* Adding small pauses at the end of staff*/
@@ -417,16 +333,12 @@ void Queue::checkEnd(float & length, size_t & i, ofstream & file)
 		float lastLength;
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
-			if (near(it->pauseDur, (int)(queue[i].initTime +
-					queue[i].duration) + 1 -
-					queue[i].initTime - queue[i].duration, BIT, BIT)) {
+			if (it->pauseDur == ((queue[i].initTime +
+					queue[i].duration)&(~15)) + 16 -
+					queue[i].initTime - queue[i].duration) {
 				file << it->pauseName;
 				lastLength += it->pauseDur;
 			}
-		}
-/* Case when we put not enough notes in file to make last beat full */
-		if (1 - length - lastLength > BIT) {
-			file << "r16 ";
 		}
 	}
 }
