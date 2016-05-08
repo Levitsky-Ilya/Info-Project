@@ -30,7 +30,7 @@ const int NOTE_C[NUMBER_OF_BLOCKS] = {24, 12, 0};
 #define DUMP_BEFORE_PEAKS 1 // type 1 to dump before selection peaks to dump.txt
 
 Notes::Notes():
-    silenceLavel(0.5)
+    silenceLevel(0.5)
 {
     for (int i = 0; i < NUMBER_OF_NOTES - 1; i++) {
         initDiffFreq[i] = initNotes[i+1] - initNotes[i];
@@ -95,10 +95,10 @@ void Notes::initialize(string fileName)
 
 }
 
-bool Notes::setSilenceLavel(float lavel)
+bool Notes::setSilenceLevel(float level)
 {
-    if (lavel >= 0 && lavel <= 1) {
-        silenceLavel = lavel;
+    if (level >= 0 && level <= 1) {
+        silenceLevel = level;
         return true;
     }
     else {
@@ -215,7 +215,7 @@ void Notes::getMaxAmpl()
                 maxAmplitude = blocks[j].block[i].maxAmpl;
         }
     }
-    silenceLavel *= maxAmplitude;
+    silenceLevel *= maxAmplitude;
 }
 
 void Notes::indentifyPeaks()
@@ -230,7 +230,7 @@ void Notes::indentifyPeaks()
         //and last notes of elder block
         for (int j = 0; j < NUMBER_OF_BLOCKS; j++) {
             if (i % (1 << j) == 0) {
-                blocks[j].indentifyPeaks(i >> j, silenceLavel);
+                blocks[j].indentifyPeaks(i >> j, silenceLevel);
             }
         }
         //because of it I solve this problem there:
@@ -238,12 +238,12 @@ void Notes::indentifyPeaks()
     }
 }
 
-void Notes::Block::indentifyPeaks(unsigned int nTime, float silenceLavel)
+void Notes::Block::indentifyPeaks(unsigned int nTime, float silenceLevel)
 {
     assert(nTime < block.size());
 
     for (int i = lastNote; i >= firstNote; i--) {
-        if (block[nTime][i] <= silenceLavel ||
+        if (block[nTime][i] <= silenceLevel ||
                 block[nTime][i] < block[nTime].maxAmpl - DELTA_PEAK) {
             block[nTime][i] = -INFINITY;
         }
@@ -341,8 +341,8 @@ void Notes::notesFromPeaks(vector<Note>& notesOut)
     for (unsigned int i = 1; i < outSize; i++) {
         int a = minBlock(notes);
         notesOut[i] = notes[a].noteBlock[notes[a].current];
-        notesOut[i].duration *= (1 << a);
-        notesOut[i].initTime *= (1 << a);
+        notesOut[i].duration <<= a;
+        notesOut[i].initTime <<= a;
         notesOut[i].initTime -= initTime;
         notes[a].current++;
     }
@@ -363,10 +363,10 @@ int Notes::minBlock(NoteBlock notes[])
         }
         if (notes[i].current == notes[i].size) {
             notes[i].current --;
-            notes[i].noteBlock[notes[i].current].initTime = UINT_MAX;
+            notes[i].noteBlock[notes[i].current].initTime = UINT_MAX >> i;
         }
-        if (notes[i].noteBlock[notes[i].current].initTime * (1 << i) <
-                notes[min].noteBlock[notes[min].current].initTime * (1 << min)) {
+        if (notes[i].noteBlock[notes[i].current].initTime << i <
+                notes[min].noteBlock[notes[min].current].initTime << min) {
             min = i;
         }
     }
