@@ -9,7 +9,7 @@
 int main()
 {
     Notes perem;
-    cout << perem.setSilenceLavel(0.7) << endl;
+    cout << perem.setSilenceLevel(0.7) << endl;
 
     try {
     perem.initialize("C:\\Users\\Admin\\Downloads\\sounds\\chords.wav");

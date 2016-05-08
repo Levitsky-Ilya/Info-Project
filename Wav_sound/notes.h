@@ -21,7 +21,7 @@
 const float DELTA_PEAK = 1.0; /// attention!!!
 
 
-struct Note //delete silence
+struct Note
 {
     int nNote;
     int duration;
@@ -49,7 +49,7 @@ class Notes
 public:
     Notes();
     void initialize(string fileName);
-    bool setSilenceLavel(float lavel);
+    bool setSilenceLevel(float level);
     void generateMidView(vector<Note>& notesOut);
 
     bool dump(ostream& fout);
@@ -68,7 +68,7 @@ private:
         void execute(const vector<float> & amplTime);
         void freqToNote(const float* const outFft,
                         AmplNotes & notes);
-        void indentifyPeaks(unsigned int nTime, float silenceLavel);
+        void indentifyPeaks(unsigned int nTime, float silenceLevel);
         void peaksToNotes(vector<Note>& notes);
         bool dump(unsigned int nTime, ostream& fout);
     };
@@ -78,7 +78,7 @@ private:
     vector<float> amplTime;
     Block blocks[NUMBER_OF_BLOCKS];
 
-    float silenceLavel;
+    float silenceLevel;
     void getMaxAmpl();
 
     void indentifyPeaks();
