@@ -24,7 +24,7 @@ const float DELTA_PEAK = 1.0; /// attention!!!
 struct Note
 {
     int nNote;
-    int duration;
+    unsigned int duration;
     unsigned int initTime;
 };
 
