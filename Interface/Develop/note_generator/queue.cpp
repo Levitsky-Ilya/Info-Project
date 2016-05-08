@@ -91,20 +91,14 @@ void Queue::drawStaff (const Queue & comparedVect, ofstream & file)
 {
 	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 /* Drawing pauses at the beginning fot the same length of staffs*/
-	int beginPauseCounter = 0;
-	if ((queue.size() != 0)&&(comparedVect.size() != 0)) {
-		while ((queue[0].initTime&(~15)) - (comparedVect[0].initTime&(~15)) -
+	unsigned int beginPauseCounter = 0;
+	if ((queue.size() != 0)&&(comparedVect.size() != 0)&&
+			((queue[0].initTime&(~15u)) > (comparedVect[0].initTime&(~15u)))) {
+		while ((queue[0].initTime&(~15u)) - (comparedVect[0].initTime&(~15u)) -
 			   beginPauseCounter >= 16) {
 			file << "r1 ";
 			beginPauseCounter += 16;
 		}
-#if 0
-/* We have to make new vector without these pauses for algorythm to work */
-		for (size_t i = 0; i < queue.size(); i++) {
-			queue[i].initTime -= beginPauseCounter;
-		}
-	}
-#endif
 	}
 	drawNote(file);
 
@@ -114,9 +108,9 @@ void Queue::drawStaff (const Queue & comparedVect, ofstream & file)
 			(((comparedVect[comparedVect.size()-1].initTime +
 			comparedVect[comparedVect.size()-1].duration) % 16) != 0)) {
 		while (((comparedVect[comparedVect.size()-1].initTime + 16 +
-				comparedVect[comparedVect.size()-1].duration)&(~15)) -
+				comparedVect[comparedVect.size()-1].duration)&(~15u)) -
 				((queue[queue.size()-1].initTime +
-				queue[queue.size()-1].duration)&(~15)) -
+				queue[queue.size()-1].duration)&(~15u)) -
 				endPauseCounter >= 16) {
 			file << "r1 ";
 			endPauseCounter += 16;
@@ -145,8 +139,8 @@ void Queue::drawNote(ofstream & file)
 	for (size_t i = 0; i < queue.size(); ) {
 
 		printChord(lastChordFreqs, i, combNum, file);
-		if (((queue[i+combNum].initTime)&(~15)) !=
-				((queue[i].initTime + queue[i].duration)&(~15))) {
+		if (((queue[i+combNum].initTime)&(~15u)) !=
+				((queue[i].initTime + queue[i].duration)&(~15u))) {
 			printNextBeatPause(lastChordFreqs, i, combNum, file);
 		} else {
 			printBeatPause(lastChordFreqs, i, combNum, file);
@@ -164,7 +158,13 @@ void Queue::firstPauseChecker(ofstream & file)
 	if (queue.size() != 0) {
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
-			if (it->pauseDur == queue[0].initTime) {
+			unsigned int full = 0;
+			if (queue[0].initTime > 16) {
+				while (queue[0].initTime - full > 16) {
+					full += 16;
+				}
+			}
+			if (it->pauseDur == (queue[0].initTime - full)) {
 				file << it->pauseName;
 			}
 		}
@@ -259,21 +259,21 @@ void Queue::printNextBeatPause(vector<int> & lastChordFreqs,
 			it != note_pause_list.end(); ++it) {
 		if (it->pauseDur == 16 - queue[i].initTime -
 				queue[i].duration + ((queue[i].initTime +
-				queue[i].duration)&(~15))) {
+				queue[i].duration)&(~15u))) {
 			file << it->pauseName;
 			pauseTaken += 16 - queue[i].initTime - queue[i].duration
-				+ ((queue[i].initTime + queue[i].duration)&(~15));
+				+ ((queue[i].initTime + queue[i].duration)&(~15u));
 		}
 	}
 /* 2) Add necessary amount of full pauses */
-	if ((queue[i+combNum].initTime&(~15)) -
+	if ((queue[i+combNum].initTime&(~15u)) -
 			((queue[i].initTime + queue[i].duration +
-			pauseTaken)&(~15)) > 16) {
+			pauseTaken)&(~15u)) > 16) {
 		int full = 0;
 		while (((i+combNum) < queue.size())&&
-				((queue[i+combNum].initTime&(~15)) -
+				((queue[i+combNum].initTime&(~15u)) -
 				((queue[i].initTime + queue[i].duration +
-				pauseTaken)&(~15)) - full >= 16)) {
+				pauseTaken)&(~15u)) - full >= 16)) {
 			full += 16;
 			file << "r1 ";
 		}
@@ -281,7 +281,7 @@ void Queue::printNextBeatPause(vector<int> & lastChordFreqs,
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
 			if (it->pauseDur == queue[i+combNum].initTime -
-					(queue[i+combNum].initTime&(~15))&&
+					(queue[i+combNum].initTime&(~15u))&&
 					((i+combNum) < queue.size())) {
 				file << it->pauseName;
 				for (size_t m = 0; m < lastChordFreqs.size(); m++) {
@@ -334,7 +334,7 @@ void Queue::checkEnd(size_t & i, ofstream & file)
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
 			if (it->pauseDur == ((queue[i].initTime +
-					queue[i].duration)&(~15)) + 16 -
+					queue[i].duration)&(~15u)) + 16 -
 					queue[i].initTime - queue[i].duration) {
 				file << it->pauseName;
 				lastLength += it->pauseDur;
