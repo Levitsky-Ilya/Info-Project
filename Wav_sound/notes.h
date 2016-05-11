@@ -78,8 +78,9 @@ private:
     vector<float> amplTime;
     Block blocks[NUMBER_OF_BLOCKS];
 
-    float silenceLevel;
+    float initLevel;
     void getMaxAmpl();
+    float silenceLevel;
 
     void indentifyPeaks();
     void complementBlocks(unsigned int nTime);
