@@ -11,6 +11,7 @@
 #define NOTES_H
 
 #include <array>
+
 #include "wav_sound.h"
 #include "fft.h"
 #include "frequencies_for_notes.h"
@@ -18,19 +19,18 @@
 #define NUMBER_OF_BLOCKS 3 // type 4 to use four blocks
 
 const float DELTA_PEAK = 1.0; /// attention!!!
-const float MIN_DURATION = 0.1; //help to filter noises
 
 
 struct Note
 {
     int nNote;
-    float duration;
-    float initTime;
+    unsigned int duration;
+    unsigned int initTime;
     bool operator< (const Note & rhs) {
         return (initTime == rhs.initTime ?
                     duration == rhs.duration ?
-                        nNote < rhs.nNote :
-                        duration < rhs.duration :
+                    nNote < rhs.nNote :
+                    duration < rhs.duration :
                     initTime < rhs.initTime
                 );
     }
@@ -57,6 +57,7 @@ class Notes
 public:
     Notes();
     void initialize(string fileName);
+    bool setSilenceLevel(float level);
     void generateMidView(vector<Note>& notesOut);
 
     bool dump(ostream& fout);
@@ -75,7 +76,7 @@ private:
         void execute(const vector<float> & amplTime);
         void freqToNote(const float* const outFft,
                         AmplNotes & notes);
-        void indentifyPeaks(unsigned int nTime, float maxAmplitude);
+        void indentifyPeaks(unsigned int nTime, float silenceLevel);
         void peaksToNotes(vector<Note>& notes);
         bool dump(unsigned int nTime, ostream& fout);
     };
@@ -85,9 +86,10 @@ private:
     vector<float> amplTime;
     Block blocks[NUMBER_OF_BLOCKS];
 
-    float maxAmplitude;
+    float initLevel;
     void getMaxAmpl();
-   // static float noiseCoef;
+    float silenceLevel;
+
     void indentifyPeaks();
     void complementBlocks(unsigned int nTime);
     void checkPeaks(unsigned int nTime);
