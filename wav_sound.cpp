@@ -39,13 +39,14 @@
 using namespace std;
 
 const int BITS_IN_BYTE = 8;
-const long SIZE_OF_LONG = sizeof(unsigned long);
+const unsigned long PAGE_SIZE = 4096;
+const unsigned long SIZE_OF_LONG = sizeof(unsigned long);
 const int THREADS_MAX = thread::hardware_concurrency();
 
 /** Constructor **/
 WavFile::WavFile ()
 {
-    file = NULL;
+    file = nullptr;
     fileName_ = "";
     seekToData = 0;
 }
@@ -124,7 +125,6 @@ void WavFile::initialize (const char* fileName)
         cout << "  byteRate: "      << fmtSubchunk.byteRate      << endl;
         cout << "  blockAlign: "    << fmtSubchunk.blockAlign    << endl;
         cout << "  bitsPerSample: " << fmtSubchunk.bitsPerSample << endl;
-        system("pause");
 #endif
         err = fseek(file, fmtSubchunk.subchunk1Size - 16, SEEK_CUR);
         if (err)
@@ -147,14 +147,12 @@ void WavFile::initialize (const char* fileName)
         cout << "DATA" << endl;
         cout << " subchunk2Size: " << dataSubchunk.subchunk2Size << endl;
         cout << " seekToData: "
-             << seekToData + SIZE_OF_CHUNKID + SIZE_OF_LONG << endl;
-        system("pause");
+             << seekToData + SIZE_OF_CHUNKID + SIZE_OF_LONG << endl << endl;
 #endif
       } else {
         fread(&subchunkSize, sizeof(unsigned long), 1, file);
 #if DEBUG
         cout << "subchunkSize: " << subchunkSize << endl;
-        system("pause");
 #endif
         err = fseek(file, subchunkSize, SEEK_CUR);
         if (err)
@@ -222,36 +220,44 @@ void WavFile::getAmplitudeArray (vector<float> &amplTime)
  */
 void WavFile::fillVector (vector<float> &amplTime)
 {
+    unsigned long sizeOfData = dataSubchunk.subchunk2Size;
+    char* buff = new(nothrow) char[sizeOfData];
+    if(buff == nullptr) {
+      fillVectorBySegments(amplTime);
+      delete [] buff;
+      return;
+    }
+
     errno_t err;
     err = fopen_s(&file, fileName_.c_str(), "rb");
-    if (err)
-    {
+    if (err) {
       string msg = "fillVector failed to open filename \"" + fileName_
               + "\", error " + to_string(err);
       throw NotesExceptions::OpenFile(msg);
     }
 
     err = fseek(file, seekToData, SEEK_SET);
-    if (err)
-    {
+    if (err) {
       string msg = "Fseek error " + to_string(err)
               + "when seeked to data in fillVector";
       throw NotesExceptions::FileDamaged(msg);
     }
 
+    /* Whole file consists of blocks. */
     unsigned short depth = fmtSubchunk.bitsPerSample;
-    unsigned long sizeOfData = dataSubchunk.subchunk2Size;     
-    char* buff = new(nothrow) char[sizeOfData];
-    if(buff == NULL) {
-      string msg = "Failed to allocate " + to_string(err) + " bytes";
-      throw NotesExceptions::BadAlloc(msg);
-    }
-
     unsigned long blockAlign = fmtSubchunk.blockAlign;
-    unsigned long nBlocks = sizeOfData/blockAlign;
+    unsigned long nBlocks = sizeOfData / blockAlign;
 
     amplTime.clear();
     amplTime.resize(nBlocks);
+
+#if DEBUG
+    cout << "DEBUG OF FILL_VECTOR"        << endl;
+    cout << "  depth: "       << depth      << endl;
+    cout << "  sizeOfData: "  << sizeOfData << endl;
+    cout << "  blockAlign: "  << blockAlign << endl;
+    cout << "  nBlocks: "     << nBlocks    << endl << endl;
+#endif
 
     fread(buff, sizeOfData, 1, file);
     fclose(file);
@@ -266,6 +272,110 @@ void WavFile::fillVector (vector<float> &amplTime)
 
     for (int i = 0; i < THREADS_MAX - 1; i++)
       thids[i].join();
+
+    delete [] buff;
+}
+
+/** This function is called if allocating memory for whole file
+ * was unsuccessful. This algorithm is using less memory,
+ * trying to allocate it by segments, until they less than a page.
+ *  Input: any vector to replace its content
+ *  Algorithm: Creates buffer sized of one segment.
+ *             Copies data from file to buffer.
+ *             Reads from buffer and fills vector
+ *             with amplitudes calculated by strtoampl(..).
+ *             Read file that way till remainder inclusive.
+ *  Output: given vector is filled with amplitudes.
+ */
+void WavFile::fillVectorBySegments (vector<float> &amplTime)
+{
+    /* Whole file now is divided to segments with equal size and one remainder.
+     * Each of them consists of blocks.
+     */
+    unsigned short depth = fmtSubchunk.bitsPerSample;
+    unsigned long blockAlign = fmtSubchunk.blockAlign;
+    unsigned long sizeOfData = dataSubchunk.subchunk2Size;
+    unsigned long nBlocksTotal = sizeOfData / blockAlign;
+    unsigned long segmentsTotal = 4;
+
+    unsigned long nBlocks = nBlocksTotal / segmentsTotal;
+    unsigned long nBlocksRemain = nBlocksTotal % segmentsTotal;
+    unsigned long segmentSize = nBlocks * blockAlign;
+    unsigned long remainderSize = nBlocksRemain * blockAlign;
+
+    //Next part is trying to allocate memory for buffer, exception otherwise.
+    char* buff = nullptr;
+    bool newSuccess = false;
+    while(newSuccess != true)
+    {
+      if (segmentSize < PAGE_SIZE) {
+        string msg = "Memory allocation failed in fillVectorBySegments.";
+        throw NotesExceptions::BadAlloc(msg);
+      }
+      char* buff = new(nothrow) char[segmentSize];
+      if(buff != nullptr)
+        newSuccess = true;
+      else {
+        segmentsTotal *= 2;
+        nBlocks = nBlocksTotal / segmentsTotal;
+        nBlocksRemain = nBlocksTotal % segmentsTotal;
+        segmentSize = nBlocks * blockAlign;
+        remainderSize = nBlocksRemain * blockAlign;
+      }
+    }
+
+    errno_t err;
+    err = fopen_s(&file, fileName_.c_str(), "rb");
+    if (err)  {
+      string msg = "fillVector failed to open filename \"" + fileName_
+              + "\", error " + to_string(err);
+      throw NotesExceptions::OpenFile(msg);
+    }
+
+    err = fseek(file, seekToData, SEEK_SET);
+    if (err) {
+      string msg = "Fseek error " + to_string(err)
+              + "when seeked to data in fillVector";
+      throw NotesExceptions::FileDamaged(msg);
+    }
+
+    amplTime.clear();
+    amplTime.resize(nBlocks);
+
+#if DEBUG
+    cout << "DEBUG OF FILL_VECTOR_BY_SEGMENTS"    << endl;
+    cout << "  depth: "         << depth         << endl;
+    cout << "  blockAlign: "    << blockAlign    << endl;
+    cout << "  sizeOfData: "    << sizeOfData    << endl;
+    cout << "  nBlocksTotal: "  << nBlocksTotal  << endl;
+    cout << "  segmentsTotal: " << segmentsTotal << endl;
+
+    cout << "  nBlocks: "       << nBlocks       << endl;
+    cout << "  nBlocksRemain: " << nBlocksRemain << endl;
+    cout << "  segmentSize: "   << segmentSize   << endl;
+    cout << "  remainderSize: " << remainderSize << endl << endl;
+#endif
+
+    for(unsigned long segment = 0; segment <= segmentsTotal; segment++)
+    {
+      if(segment == segmentsTotal && remainderSize != 0) {
+      /* If some data left in remainder of size less than segment. */
+          segmentSize = remainderSize;
+          nBlocks = nBlocksRemain;
+      }
+      fread(buff, segmentSize, 1, file);
+
+      thread thids[THREADS_MAX - 1];
+      for (int i = 0; i < THREADS_MAX - 1; i++)
+        thids[i] = thread(fillVectorConcurr, this, buff, ref(amplTime),
+                          nBlocks, blockAlign, depth, i);
+
+      fillVectorConcurr(buff, amplTime,
+                        nBlocks, blockAlign, depth, THREADS_MAX - 1);
+
+      for (int i = 0; i < THREADS_MAX - 1; i++)
+        thids[i].join();
+    }
 
     delete [] buff;
 }
@@ -290,7 +400,7 @@ void* WavFile::fillVectorConcurr (char* buff,
       tmpAmplitude = strtoampl(buff + i*blockAlign, depth);
       amplTime[i] = tmpAmplitude;
     }
-    return NULL;
+    return nullptr;
 }
 
 /** Additional method to print content of vector*/
