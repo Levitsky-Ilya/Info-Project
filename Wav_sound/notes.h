@@ -12,8 +12,8 @@
 
 #include <array>
 
-#include "../wav_sound.h"
-#include "../fftAlgorithm/fft.h"
+#include "../additional_files/wav_sound.h"
+#include "../additional_files/fft.h"
 #include "frequencies_for_notes.h"
 
 #define NUMBER_OF_BLOCKS 3 // type 4 to use four blocks
@@ -26,6 +26,12 @@ struct Note
     int nNote;
     unsigned int duration;
     unsigned int initTime;
+
+	bool operator< (const Note & rhs) {
+			return (initTime == rhs.initTime ? duration == rhs.duration ?
+					nNote < rhs.nNote : duration < rhs.duration :
+					initTime < rhs.initTime );
+	}
 };
 
 struct NoteBlock
