@@ -57,9 +57,7 @@ class Queue : public vector<struct Note>
 			size_t & i, int & combNum, ofstream & file);
 
 /* Actions at the end of staff */
-	void checkEnd(size_t & i, ofstream & file);
-
-	const float BIT = 0.03125;
+	void checkEnd(size_t & i, int &combNum, ofstream & file);
 };
 
 #endif // QUEUE_H

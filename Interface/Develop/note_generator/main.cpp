@@ -24,13 +24,14 @@ int main()
 	Notes notes;
 	try {
 		notes.initialize("E:/Programs/Qt/Projects/note_generator/"
-						 "etude.wav");
+						 "A.wav");
 	}
 	catch (Exception & e) {
 		cout << e.getErrorMessage() << endl;
 	}
 
 	vector<Note> noteVect;
+	notes.setSilenceLevel(0.5);
 	notes.generateMidView(noteVect);
 
 	Queue noteVectL(noteVect, true);
@@ -41,19 +42,21 @@ int main()
 
 	ofstream file("E:/Programs/Lilypond/file.ly");
 
-	file << "normal = \\new Staff { \n";
-
-	noteVectN.drawStaff(noteVectL, file);
-
-	file << "bass = \\new Staff { \n";
-	file << "\\clef \"bass\" \n";
-
-	noteVectL.drawStaff(noteVectN, file);
-
-	file << "{\n";
+	file << "\\header {title = " << "\"A.wav\"" << "}\n";
+	file << "\\score { \n";
 	file << "\\new PianoStaff << \n";
-	file << "\\normal \n";
-	file << "\\bass \n";
+
+	if (noteVectN.size() != 0) {
+		file << "\\new Staff { \n";
+		noteVectN.drawStaff(noteVectL, file);
+	}
+
+	if (noteVectL.size() != 0) {
+		file << "\\new Staff { \n";
+		file << "\\clef \"bass\" \n";
+		noteVectL.drawStaff(noteVectN, file);
+	}
+
 	file << ">> \n";
 	file << "} \n";
 

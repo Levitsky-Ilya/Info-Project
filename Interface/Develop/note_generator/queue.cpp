@@ -117,6 +117,7 @@ void Queue::drawStaff (const Queue & comparedVect, ofstream & file)
 		}
 	}
 
+	file << "\\bar \"|.\"";
 	file << "\n";
 	file << "}\n";
 }
@@ -144,7 +145,7 @@ void Queue::drawNote(ofstream & file)
 			printNextBeatPause(lastChordFreqs, i, combNum, file);
 		} else {
 			printBeatPause(lastChordFreqs, i, combNum, file);
-			checkEnd(i, file);
+			checkEnd(i, combNum, file);
 		}
 
 		i = i + combNum;
@@ -325,11 +326,11 @@ void Queue::printBeatPause(vector<int> & lastChordFreqs,
 	}
 }
 //==============================================================================
-void Queue::checkEnd(size_t & i, ofstream & file)
+void Queue::checkEnd(size_t & i, int & combNum, ofstream & file)
 {
 	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 /* Adding small pauses at the end of staff*/
-	if (i == queue.size() - 1) {
+	if ((i + combNum) == queue.size() - 1) {
 		float lastLength;
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
