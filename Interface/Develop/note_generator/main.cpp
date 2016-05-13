@@ -24,7 +24,7 @@ int main()
 	Notes notes;
 	try {
 		notes.initialize("E:/Programs/Qt/Projects/note_generator/"
-						 "A.wav");
+						 "etude.wav");
 	}
 	catch (Exception & e) {
 		cout << e.getErrorMessage() << endl;
@@ -42,7 +42,7 @@ int main()
 
 	ofstream file("E:/Programs/Lilypond/file.ly");
 
-	file << "\\header {title = " << "\"A.wav\"" << "}\n";
+	file << "\\header {title = " << "\"etude.wav\"" << "}\n";
 	file << "\\score { \n";
 	file << "\\new PianoStaff << \n";
 

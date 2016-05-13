@@ -330,7 +330,7 @@ void Queue::checkEnd(size_t & i, int & combNum, ofstream & file)
 {
 	vector<Note> & queue = *(static_cast<vector<Note>*>(this));
 /* Adding small pauses at the end of staff*/
-	if ((i + combNum) == queue.size() - 1) {
+	if ((i + combNum) == queue.size()) {
 		float lastLength;
 		for (auto it = note_pause_list.begin();
 				it != note_pause_list.end(); ++it) {
