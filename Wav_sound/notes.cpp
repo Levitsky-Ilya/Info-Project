@@ -30,7 +30,8 @@ const int NOTE_C[NUMBER_OF_BLOCKS] = {24, 12, 0};
 #define DUMP_BEFORE_PEAKS 1 // type 1 to dump before selection peaks to dump.txt
 
 Notes::Notes():
-    silenceLevel(0.5)
+    initLevel(0.5),
+    silenceLevel(0.0)
 {
     for (int i = 0; i < NUMBER_OF_NOTES - 1; i++) {
         initDiffFreq[i] = initNotes[i+1] - initNotes[i];
@@ -98,7 +99,7 @@ void Notes::initialize(string fileName)
 bool Notes::setSilenceLevel(float level)
 {
     if (level >= 0 && level <= 1) {
-        silenceLevel = level;
+        initLevel = level;
         return true;
     }
     else {
@@ -215,7 +216,10 @@ void Notes::getMaxAmpl()
                 maxAmplitude = blocks[j].block[i].maxAmpl;
         }
     }
-    silenceLevel *= maxAmplitude;
+    if (maxAmplitude > 0)
+        silenceLevel = maxAmplitude * initLevel;
+    else
+        silenceLevel = 0; //what should we do if there are not positive amplitudes?
 }
 
 void Notes::indentifyPeaks()
@@ -243,7 +247,7 @@ void Notes::Block::indentifyPeaks(unsigned int nTime, float silenceLevel)
     assert(nTime < block.size());
 
     for (int i = lastNote; i >= firstNote; i--) {
-        if (block[nTime][i] <= silenceLevel ||
+        if (block[nTime][i] < silenceLevel ||
                 block[nTime][i] < block[nTime].maxAmpl - DELTA_PEAK) {
             block[nTime][i] = -INFINITY;
         }

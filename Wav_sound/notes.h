@@ -24,7 +24,7 @@ const float DELTA_PEAK = 1.0; /// attention!!!
 struct Note
 {
     int nNote;
-    int duration;
+    unsigned int duration;
     unsigned int initTime;
 };
 
@@ -78,8 +78,9 @@ private:
     vector<float> amplTime;
     Block blocks[NUMBER_OF_BLOCKS];
 
-    float silenceLevel;
+    float initLevel;
     void getMaxAmpl();
+    float silenceLevel;
 
     void indentifyPeaks();
     void complementBlocks(unsigned int nTime);
