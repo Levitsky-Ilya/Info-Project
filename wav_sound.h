@@ -20,7 +20,7 @@
 
 using namespace std;
 
-const long SIZE_OF_CHUNKID = 4;
+const unsigned long SIZE_OF_CHUNKID = 4;
 
 struct RiffWaveHeader
 {
@@ -97,6 +97,7 @@ private:
     unsigned long seekToData;
 
     void fillVector(vector<float> &amplTime);
+    void fillVectorBySegments (vector<float> &amplTime);
     void* fillVectorConcurr (char *buff,
                              vector<float> &amplTime,
                              unsigned long nBlocks,
