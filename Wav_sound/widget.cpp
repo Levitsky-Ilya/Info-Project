@@ -14,6 +14,8 @@
 #include <global.h>
 #include <queue.h>
 #include <QMessageBox>
+#include <cstring>
+#include <string>
 
 #define silenceDefault 50
 Widget::Widget(QWidget *parent) :
@@ -44,7 +46,8 @@ Widget::Widget(QWidget *parent) :
    // bool a = true;
    // QObject::connect(ui->midnoiseBox,SIGNAL(clicked()),this,SLOT(doSAS()));
     mesBox =  new QMessageBox();
-    mesBox->setText("OK");
+    errmesBox = new QMessageBox();
+   // mesBox->setText("OK");
     //qDebug()<<file_in<<file
     if (file_ly.isEmpty() || file_wav.isEmpty()){
         ui->startButton->setDisabled(true);
@@ -79,7 +82,7 @@ void Widget::setdefLevel()
 void Widget::changeText(QString str)
 {
    // ui->startButton->setEnabled(!str.isEmpty());
-    if (!file_ly.isEmpty() && !file_wav.isEmpty()){
+    if (!file_dir.isEmpty() && !file_wav.isEmpty()){
         ui->startButton->setDisabled(false);
     }
 
@@ -101,9 +104,10 @@ void Widget::statePath()
       //      getOpenFileName(this, tr("Open File"), "C:/Qt/test_ui",tr("All files (*.*)"));
 
    // file_ly = ui->lypathEdit->text();
-    file_ly = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home" ,
+    file_dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home" ,
                                                 QFileDialog::ShowDirsOnly);
-    ui->lypathEdit->setText(file_ly);
+    ui->lypathEdit->setText(file_dir);
+    qDebug() << file_dir;
 
     QString ly_name;
     QString last;
@@ -116,7 +120,12 @@ void Widget::statePath()
     ly_name.remove(0, last_index); //remove all before file name
 
     ly_name.chop(3); //remove wav
+    file_name = ly_name;
+    file_name.chop(1);
+    file_name.remove(0, 1); //get only name
     ly_name.append("ly"); // add ly
+    file_ly = file_dir;
+    qDebug() << file_ly;
     file_ly.append(ly_name); //get path+filename .ly
     qDebug()<<file_ly;
 
@@ -133,25 +142,35 @@ void Widget::getPdffile()
 
 void Widget::openPdffile()
 {
-   file_ly.chop(2);
-   file_ly.append("pdf");
-   system(file_ly.toLocal8Bit());
+   file_pdf = file_ly;
+   file_pdf.chop(2);  //other letters appear ((((((
+   file_pdf.append("pdf");
+   system(file_pdf.toLocal8Bit());
 }
 
 
 void Widget::getLyfile()
 {
     Notes notes;
-       // changeLevel(part);
-        notes.setSilenceLevel(slevel);
         try {
             notes.initialize(file_wav.toStdString());
         }
-        catch (Exception & e) {
-            cout << e.getErrorMessage() << endl;
+        catch (runtime_error & e) {
+            cout << e.what() << endl;
+            errmesBox->setText(e.what());
+           // errmesBox->setIcon(QMessageBox::Abort);
+            errmesBox->setIcon(QMessageBox::Critical);
+            errmesBox->setWindowTitle("ERROR");
+            qDebug() << "error ypopt";
+            int error = errmesBox->exec();
+
+             //if (errmesBox->buttonClicked(true))
+            exit(EXIT_FAILURE);
+
         }
 
         vector<Note> noteVect;
+        notes.setSilenceLevel(0.5);
         notes.generateMidView(noteVect);
 
         Queue noteVectL(noteVect, true);
@@ -162,30 +181,27 @@ void Widget::getLyfile()
 
         ofstream file(file_ly.toStdString());
 
-        file << "normal = \\new Staff { \n";
-
-        noteVectN.drawStaff(noteVectL, file);
-
-        file << "bass = \\new Staff { \n";
-        file << "\\clef \"bass\" \n";
-
-        noteVectL.drawStaff(noteVectN, file);
-
-        file << "{\n";
+        file << "\\header {title = " << '"' << file_name.toStdString() << '"' << "}\n";
+        file << "\\score { \n";
         file << "\\new PianoStaff << \n";
-        file << "\\normal \n";
-        file << "\\bass \n";
+
+        if (noteVectN.size() != 0) {
+            file << "\\new Staff { \n";
+            noteVectN.drawStaff(noteVectL, file);
+        }
+
+        if (noteVectL.size() != 0) {
+            file << "\\new Staff { \n";
+            file << "\\clef \"bass\" \n";
+            noteVectL.drawStaff(noteVectN, file);
+        }
+
         file << ">> \n";
         file << "} \n";
 
         file.close();
 
         cout << "Assemble complete" << endl;
-
-
-
-
-
 
 }
 
@@ -199,7 +215,7 @@ void Widget::transform()
     mesBox->setIcon(QMessageBox::Information);
     mesBox->setWindowTitle("SUCCESS!");
     int show = mesBox->exec();
- //  openPdffile();
+   // openPdffile();
 
 
 }

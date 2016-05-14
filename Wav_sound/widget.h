@@ -25,14 +25,19 @@ private:
     Ui::Widget *ui;
     QString file_wav;
     QString file_ly = "";
-    float slevel;
+    QString file_pdf;
+    QString file_name;
+    QString file_dir;
+    float slevel = 0.5;
     QMessageBox *mesBox;
+    QMessageBox *errmesBox;
     void getLyfile();
     void getPdffile();
     void openPdffile();
 
+
 public slots:
-     void changeText(QString str);
+     void changeText(QString);
      void transform();
      void openWav();
      void statePath();
