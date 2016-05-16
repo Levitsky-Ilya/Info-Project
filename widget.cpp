@@ -96,6 +96,7 @@ void Widget::openWav()
             tr("wav-files(*.wav)"));
     ui->wavpathEdit->setText(file_wav);
     qDebug()<<file_wav;
+
 }
 
 void Widget::statePath()
@@ -151,6 +152,7 @@ void Widget::openPdffile()
 
 void Widget::getLyfile()
 {
+
     Notes notes;
         try {
             notes.initialize(file_wav.toStdString());
@@ -163,60 +165,68 @@ void Widget::getLyfile()
             errmesBox->setWindowTitle("ERROR");
             qDebug() << "error ypopt";
             int error = errmesBox->exec();
-
+            no_error = false;
+            qDebug() << no_error;
              //if (errmesBox->buttonClicked(true))
-            exit(EXIT_FAILURE);
+           // exit(EXIT_FAILURE);
 
         }
+        if (no_error)  {
 
-        vector<Note> noteVect;
-        notes.setSilenceLevel(0.5);
-        notes.generateMidView(noteVect);
+            vector<Note> noteVect;
+            notes.setSilenceLevel(0.5);
+            notes.generateMidView(noteVect);
 
-        Queue noteVectL(noteVect, true);
-        Queue noteVectN(noteVect, false);
+            Queue noteVectL(noteVect, true);
+            Queue noteVectN(noteVect, false);
 
-        noteVectN.breaker();
-        noteVectL.breaker();
+            noteVectN.breaker();
+            noteVectL.breaker();
 
-        ofstream file(file_ly.toStdString());
+            ofstream file(file_ly.toStdString());
 
-        file << "\\header {title = " << '"' << file_name.toStdString() << '"' << "}\n";
-        file << "\\score { \n";
-        file << "\\new PianoStaff << \n";
+            file << "\\header {title = " << '"' << file_name.toStdString() << '"' << "}\n";
+            file << "\\score { \n";
+            file << "\\new PianoStaff << \n";
 
-        if (noteVectN.size() != 0) {
-            file << "\\new Staff { \n";
-            noteVectN.drawStaff(noteVectL, file);
+            if (noteVectN.size() != 0) {
+                file << "\\new Staff { \n";
+                noteVectN.drawStaff(noteVectL, file);
+            }
+
+            if (noteVectL.size() != 0) {
+                file << "\\new Staff { \n";
+                file << "\\clef \"bass\" \n";
+                noteVectL.drawStaff(noteVectN, file);
+            }
+
+            file << ">> \n";
+            file << "} \n";
+
+            file.close();
+
+            cout << "Assemble complete" << endl;
         }
-
-        if (noteVectL.size() != 0) {
-            file << "\\new Staff { \n";
-            file << "\\clef \"bass\" \n";
-            noteVectL.drawStaff(noteVectN, file);
-        }
-
-        file << ">> \n";
-        file << "} \n";
-
-        file.close();
-
-        cout << "Assemble complete" << endl;
 
 }
 
 void Widget::transform()
 {
+    qDebug() << no_error;
 
-    getLyfile();
-    getPdffile();
-//    mesBox->show();
-    mesBox->setText("Done!\n Your PDF is in the selected folder. ");
-    mesBox->setIcon(QMessageBox::Information);
-    mesBox->setWindowTitle("SUCCESS!");
-    int show = mesBox->exec();
-   // openPdffile();
-
+        getLyfile();
+    if (no_error) {
+        getPdffile();
+    //    mesBox->show();
+        mesBox->setText("Done!\n Your PDF is in the selected folder. ");
+        mesBox->setIcon(QMessageBox::Information);
+        mesBox->setWindowTitle("SUCCESS!");
+        int show = mesBox->exec();
+       // openPdffile();
+   }
+    ui->wavpathEdit->clear();
+    ui->lypathEdit->clear();
+     no_error = true;
 
 }
 

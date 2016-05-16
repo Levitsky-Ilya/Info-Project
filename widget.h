@@ -34,6 +34,7 @@ private:
     void getLyfile();
     void getPdffile();
     void openPdffile();
+    bool no_error = true;
 
 
 public slots:
