@@ -38,7 +38,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>4notes</string>
+   <string>NoteScope</string>
   </property>
   <property name="toolTip">
    <string/>
@@ -59,7 +59,7 @@
    <property name="geometry">
     <rect>
      <x>70</x>
-     <y>210</y>
+     <y>230</y>
      <width>631</width>
      <height>41</height>
     </rect>
@@ -312,7 +312,7 @@ gridline-color: rgb(7, 7, 7);
    <property name="geometry">
     <rect>
      <x>250</x>
-     <y>370</y>
+     <y>410</y>
      <width>261</width>
      <height>51</height>
     </rect>
@@ -337,26 +337,26 @@ background-color: rgb(132, 171, 244);</string>
   <widget class="QTextBrowser" name="textBrowser">
    <property name="geometry">
     <rect>
-     <x>90</x>
-     <y>30</y>
-     <width>571</width>
-     <height>81</height>
+     <x>150</x>
+     <y>10</y>
+     <width>461</width>
+     <height>111</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <family>MS Reference Sans Serif</family>
-     <pointsize>8</pointsize>
-     <weight>50</weight>
+     <family>Lucida Sans Unicode</family>
+     <pointsize>6</pointsize>
+     <weight>9</weight>
      <italic>false</italic>
      <bold>false</bold>
     </font>
    </property>
    <property name="styleSheet">
     <string notr="true">gridline-color: rgb(0, 2, 42);
+font: 75 6pt &quot;Lucida Sans Unicode&quot;;
 background-color: rgb(207, 255, 206);
 background-color: rgb(84, 167, 255);
-font: 8pt &quot;MS Reference Sans Serif&quot;;
 background-color: rgb(132, 171, 244);
 </string>
    </property>
@@ -364,15 +364,15 @@ background-color: rgb(132, 171, 244);
     <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Reference Sans Serif'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p align=&quot;center&quot; style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Stencil'; font-size:20pt; color:#00002f;&quot;&gt;This program transforms WAV-file into PDF with its notes!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Lucida Sans Unicode'; font-size:6pt; font-weight:72; font-style:normal;&quot;&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:20pt; font-weight:600; text-decoration: underline; color:#00002f;&quot;&gt;NoteScope&lt;/span&gt;&lt;span style=&quot; font-size:20pt; font-weight:600; color:#00002f;&quot;&gt;&lt;br /&gt; &lt;/span&gt;&lt;span style=&quot; font-size:18pt; font-weight:600; color:#00002f;&quot;&gt;transforms WAV-file into PDF &lt;br /&gt;with its notes&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QWidget" name="horizontalLayoutWidget_3">
    <property name="geometry">
     <rect>
      <x>70</x>
-     <y>280</y>
+     <y>290</y>
      <width>631</width>
      <height>41</height>
     </rect>
@@ -389,7 +389,7 @@ p, li { white-space: pre-wrap; }
        </font>
       </property>
       <property name="toolTip">
-       <string>Here PDF will appear</string>
+       <string>Choose destination folder, where PDF file will be created</string>
       </property>
       <property name="whatsThis">
        <string>what</string>
@@ -445,8 +445,8 @@ gridline-color: rgb(7, 7, 7);</string>
    <property name="geometry">
     <rect>
      <x>70</x>
-     <y>140</y>
-     <width>541</width>
+     <y>170</y>
+     <width>551</width>
      <height>41</height>
     </rect>
    </property>
@@ -634,7 +634,7 @@ gridline-color: rgb(7, 7, 7);</string>
        </font>
       </property>
       <property name="toolTip">
-       <string comment="dchb" extracomment="cdbdn">If there are too many notes in pdf, try to reduce the silence level. Otherwise, raise it.</string>
+       <string comment="dchb" extracomment="cdbdn">If there are too many notes in PDF, try to raise the silence level. Otherwise, reduce it.</string>
       </property>
       <property name="whatsThis">
        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -681,6 +681,73 @@ gridline-color: rgb(7, 7, 7);
      </widget>
     </item>
    </layout>
+  </widget>
+  <widget class="QLabel" name="copyrightLabel">
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>510</y>
+     <width>131</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(0, 0, 0);</string>
+   </property>
+   <property name="text">
+    <string>© 2016 MIPT414</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>360</y>
+     <width>511</width>
+     <height>39</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Segoe MDL2 Assets</family>
+     <pointsize>10</pointsize>
+     <weight>75</weight>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="toolTip">
+    <string>Here PDF will appear</string>
+   </property>
+   <property name="whatsThis">
+    <string>what</string>
+   </property>
+   <property name="accessibleDescription">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;desc&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(0, 0, 0);</string>
+   </property>
+   <property name="text">
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Please, make sure LilyPond program is installed. Otherwise PDF will not be created&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="pdfcheckBox">
+   <property name="geometry">
+    <rect>
+     <x>70</x>
+     <y>130</y>
+     <width>141</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>Open generated PDF</string>
+   </property>
   </widget>
  </widget>
  <layoutdefault spacing="6" margin="11"/>

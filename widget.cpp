@@ -22,12 +22,14 @@ Widget::Widget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget)
 {
+
     ui->setupUi(this);
 
     ui->levelSlider->setValue(50);
     ui->levelspinBox->setValue(50);
     ui->levelSlider->setMaximum(100);
     ui->levelspinBox->setMaximum(100);
+    ui->pdfcheckBox->setChecked(false);
     QObject::connect(ui->browseButton, SIGNAL(clicked()),this, SLOT(openWav()));
     QObject::connect(ui->startButton, SIGNAL(clicked()),this, SLOT(transform()));
     QObject::connect(ui->browselyButton, SIGNAL(clicked()),this, SLOT(statePath()));
@@ -38,17 +40,15 @@ Widget::Widget(QWidget *parent) :
     QObject::connect(ui->levelspinBox, SIGNAL(valueChanged(int)), ui->levelSlider, SLOT(setValue(int)));
     QObject::connect(ui->levelSlider, SIGNAL(valueChanged(int)), ui->levelspinBox, SLOT(setValue(int)));
     QObject::connect(ui->sdefButton, SIGNAL(clicked()), this, SLOT(setdefLevel()));
+    QObject::connect(ui->pdfcheckBox, SIGNAL(clicked(bool)), this, SLOT(pdfCheck()));
 
     ui->srcLabel->setToolTip("Choose wav-file you want to transform");
-
 
     //ui->midnoiseBox->setChecked(true);
    // bool a = true;
    // QObject::connect(ui->midnoiseBox,SIGNAL(clicked()),this,SLOT(doSAS()));
     mesBox =  new QMessageBox();
     errmesBox = new QMessageBox();
-   // mesBox->setText("OK");
-    //qDebug()<<file_in<<file
     if (file_ly.isEmpty() || file_wav.isEmpty()){
         ui->startButton->setDisabled(true);
     }
@@ -61,26 +61,25 @@ Widget::~Widget()
     delete ui;
 }
 
-/*
-void Widget::doSereAS()
-{
-    qDebug()<<"qqq";
+void Widget::pdfCheck() {
+    if (ui->pdfcheckBox->isChecked())
+        pdfcheck = true;
+    else
+        pdfcheck = false;
+        qDebug() << "ee";
+
 }
-*/
 
-
-void Widget::changeLevel(int part)
-{
+void Widget::changeLevel(int part) {
     slevel = part*0.01;
+    qDebug() << slevel;
 }
 
-void Widget::setdefLevel()
-{
+void Widget::setdefLevel() {
     ui->levelSlider->setValue(silenceDefault);
 }
 
-void Widget::changeText(QString str)
-{
+void Widget::changeText(QString str){
    // ui->startButton->setEnabled(!str.isEmpty());
     if (!file_dir.isEmpty() && !file_wav.isEmpty()){
         ui->startButton->setDisabled(false);
@@ -89,8 +88,7 @@ void Widget::changeText(QString str)
 }
 
 
-void Widget::openWav()
-{
+void Widget::openWav(){
 
     file_wav = QFileDialog::getOpenFileName(this, tr("Open File"), "/home",
             tr("wav-files(*.wav)"));
@@ -99,16 +97,49 @@ void Widget::openWav()
 
 }
 
-void Widget::statePath()
-{
-    //file_ly = QFileDialog::get2
-      //      getOpenFileName(this, tr("Open File"), "C:/Qt/test_ui",tr("All files (*.*)"));
+void Widget::statePath(){
 
-   // file_ly = ui->lypathEdit->text();
     file_dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"), "/home" ,
                                                 QFileDialog::ShowDirsOnly);
     ui->lypathEdit->setText(file_dir);
     qDebug() << file_dir;
+
+
+}
+
+
+void Widget::getPdffile(){
+
+    checkly = system(file_ly.toLocal8Bit());
+    qDebug() << "here!!";
+    qDebug() << checkly;
+
+    if (checkly != 0) {
+        errmesBox->setText("PDF cannot be generated <br />"
+                           "Please, install lilypond <br />  "
+                           "http://lilypond.org/download.html");
+        errmesBox->setIcon(QMessageBox::Critical);
+        errmesBox->setWindowTitle("ERROR");
+    }
+
+}
+
+
+void Widget::openPdffile() {
+    qDebug() << "pdfcheck is" << pdfcheck;
+   if (pdfcheck == true) {
+       file_pdf = file_ly;
+       file_pdf.chop(2);  //other letters appear ((((((
+       file_pdf.append("pdf");
+       system(file_pdf.toLocal8Bit());
+       qDebug() << "open pdf>>";
+       qDebug() << file_pdf;
+   }
+
+}
+
+
+void Widget::getLyfile(){
 
     QString ly_name;
     QString last;
@@ -116,42 +147,18 @@ void Widget::statePath()
     ly_name = file_wav;
    // qDebug()<< ly_name;
     last = "/";
-    last_index = ly_name.lastIndexOf(last); //find position of last slash -filename start
-
+    last_index = ly_name.lastIndexOf(last); //find position of last slash
     ly_name.remove(0, last_index); //remove all before file name
-
     ly_name.chop(3); //remove wav
     file_name = ly_name;
     file_name.chop(1);
     file_name.remove(0, 1); //get only name
     ly_name.append("ly"); // add ly
     file_ly = file_dir;
-    qDebug() << file_ly;
+
+    qDebug() << "file_ly in genaration is:"<< file_ly;
     file_ly.append(ly_name); //get path+filename .ly
     qDebug()<<file_ly;
-
-}
-
-
-void Widget::getPdffile()
-{
-   system(file_ly.toLocal8Bit());
-
-
-}
-
-
-void Widget::openPdffile()
-{
-   file_pdf = file_ly;
-   file_pdf.chop(2);  //other letters appear ((((((
-   file_pdf.append("pdf");
-   system(file_pdf.toLocal8Bit());
-}
-
-
-void Widget::getLyfile()
-{
 
     Notes notes;
         try {
@@ -166,15 +173,13 @@ void Widget::getLyfile()
             qDebug() << "error ypopt";
             int error = errmesBox->exec();
             no_error = false;
-            qDebug() << no_error;
-             //if (errmesBox->buttonClicked(true))
-           // exit(EXIT_FAILURE);
+            qDebug() << no_error;         
 
         }
         if (no_error)  {
 
             vector<Note> noteVect;
-            notes.setSilenceLevel(0.5);
+            notes.setSilenceLevel(slevel);
             notes.generateMidView(noteVect);
 
             Queue noteVectL(noteVect, true);
@@ -210,22 +215,24 @@ void Widget::getLyfile()
 
 }
 
-void Widget::transform()
-{
+void Widget::transform(){
+
     qDebug() << no_error;
 
         getLyfile();
     if (no_error) {
         getPdffile();
-    //    mesBox->show();
-        mesBox->setText("Done!\n Your PDF is in the selected folder. ");
-        mesBox->setIcon(QMessageBox::Information);
-        mesBox->setWindowTitle("SUCCESS!");
-        int show = mesBox->exec();
-       // openPdffile();
+        if (checkly == 0) {
+            mesBox->setText("Generation completed!\n See result in the destination folder");
+            mesBox->setIcon(QMessageBox::Information);
+            mesBox->setWindowTitle("SUCCESS!");
+            int show = mesBox->exec();
+               // openPdffile();
+        }
+        openPdffile();
+
    }
-    ui->wavpathEdit->clear();
-    ui->lypathEdit->clear();
+
      no_error = true;
 
 }

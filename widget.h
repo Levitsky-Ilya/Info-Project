@@ -35,6 +35,8 @@ private:
     void getPdffile();
     void openPdffile();
     bool no_error = true;
+    int checkly ;
+    bool pdfcheck = false;
 
 
 public slots:
@@ -44,21 +46,12 @@ public slots:
      void statePath();
      void changeLevel(int part);
      void setdefLevel();
+     void pdfCheck();
 
 
 
-};
-
-/*
-class str : public QString
-{
-    Q_OBJECT
-
- private:
-    QString str;
-public slots:
 
 };
-*/
+
 
 #endif // WIDGET_H
