@@ -16,6 +16,7 @@
 #include <QMessageBox>
 #include <cstring>
 #include <string>
+#include <chrono>
 
 #define silenceDefault 50
 Widget::Widget(QWidget *parent) :
@@ -49,8 +50,10 @@ Widget::Widget(QWidget *parent) :
    // QObject::connect(ui->midnoiseBox,SIGNAL(clicked()),this,SLOT(doSAS()));
     mesBox =  new QMessageBox();
     errmesBox = new QMessageBox();
-    if (file_ly.isEmpty() || file_wav.isEmpty()){
+    if (file_dir.isEmpty() || file_wav.isEmpty()){
         ui->startButton->setDisabled(true);
+        ui->startButton->setStyleSheet(QString::fromUtf8("background-color: rgb(198, 198, 198);"));
+
     }
 
 }
@@ -83,6 +86,8 @@ void Widget::changeText(QString str){
    // ui->startButton->setEnabled(!str.isEmpty());
     if (!file_dir.isEmpty() && !file_wav.isEmpty()){
         ui->startButton->setDisabled(false);
+        ui->startButton->setStyleSheet(QString::fromUtf8("background-color: rgb(132, 171, 244);"));
+
     }
 
 }
@@ -95,6 +100,12 @@ void Widget::openWav(){
     ui->wavpathEdit->setText(file_wav);
     qDebug()<<file_wav;
 
+    if (file_dir.isEmpty() || file_wav.isEmpty()){
+        ui->startButton->setDisabled(true);
+        ui->startButton->setStyleSheet(QString::fromUtf8("background-color: rgb(198, 198, 198);"));
+
+    }
+
 }
 
 void Widget::statePath(){
@@ -104,6 +115,11 @@ void Widget::statePath(){
     ui->lypathEdit->setText(file_dir);
     qDebug() << file_dir;
 
+    if (file_dir.isEmpty() || file_wav.isEmpty()){
+        ui->startButton->setDisabled(true);
+        ui->startButton->setStyleSheet(QString::fromUtf8("background-color: rgb(198, 198, 198);"));
+
+    }
 
 }
 
@@ -221,7 +237,16 @@ void Widget::transform(){
 
         getLyfile();
     if (no_error) {
+        cout << "Lilypond started..." << endl;
+        chrono::time_point<chrono::system_clock> start, end;
+        start = chrono::system_clock::now();
+
         getPdffile();
+
+        end = chrono::system_clock::now();
+        chrono::duration<double> spent_time = end - start;
+        cout << "Lilypond completed for " << spent_time.count() << "s."<< endl;
+
         if (checkly == 0) {
             mesBox->setText("Generation completed!\n See result in the destination folder");
             mesBox->setIcon(QMessageBox::Information);
