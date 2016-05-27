@@ -8,7 +8,7 @@
 #include <frequencies_for_notes.h>
 #include <fft.h>
 #include <complex.h>
-#include <exception.h>
+#include <exceptions.h>
 #include <freq_names.h>
 #include <note_pauses.h>
 #include <global.h>
@@ -69,7 +69,7 @@ void Widget::pdfCheck() {
         pdfcheck = true;
     else
         pdfcheck = false;
-        qDebug() << "ee";
+       // qDebug() << "ee";
 
 }
 
@@ -127,7 +127,6 @@ void Widget::statePath(){
 void Widget::getPdffile(){
 
     checkly = system(file_ly.toLocal8Bit());
-    qDebug() << "here!!";
     qDebug() << checkly;
 
     if (checkly != 0) {
@@ -180,23 +179,52 @@ void Widget::getLyfile(){
         try {
             notes.initialize(file_wav.toStdString());
         }
+        catch (NotesExceptions::FileDamaged &e) {
+        cout << e.what() << endl;
+        string a = e.what();
+        a += "\nFile is damaged, try another one";
+        errmesBox->setText(a.c_str());
+
+       // errmesBox->setIcon(QMessageBox::Abort);
+        errmesBox->setIcon(QMessageBox::Critical);
+        errmesBox->setWindowTitle("ERROR");
+        no_error = false;
+        qDebug() << "error";
+        int error1 = errmesBox->exec();
+    }
+
         catch (runtime_error & e) {
             cout << e.what() << endl;
             errmesBox->setText(e.what());
            // errmesBox->setIcon(QMessageBox::Abort);
             errmesBox->setIcon(QMessageBox::Critical);
             errmesBox->setWindowTitle("ERROR");
-            qDebug() << "error ypopt";
+            qDebug() << "error";
             int error = errmesBox->exec();
             no_error = false;
-            qDebug() << no_error;         
+           // qDebug() << no_error;
 
         }
         if (no_error)  {
 
             vector<Note> noteVect;
             notes.setSilenceLevel(slevel);
+
+            cout << "generateMidView started..." << endl;
+            chrono::time_point<chrono::system_clock> start, end;
+            start = chrono::system_clock::now();
+
             notes.generateMidView(noteVect);
+
+
+            end = chrono::system_clock::now();
+            chrono::duration<double> spent_time = end - start;
+            cout << "generateMidView completed for " << spent_time.count() << "s."<< endl;
+
+
+
+            cout << "Text file creating started..." << endl;
+            start = chrono::system_clock::now();
 
             Queue noteVectL(noteVect, true);
             Queue noteVectN(noteVect, false);
@@ -226,7 +254,10 @@ void Widget::getLyfile(){
 
             file.close();
 
-            cout << "Assemble complete" << endl;
+            end = chrono::system_clock::now();
+            spent_time = end - start;
+            cout << "Text file creating completed for " << spent_time.count() << "s."<< endl;
+
         }
 
 }
